@@ -102,7 +102,7 @@
     const ordersSection = document.getElementById("orders");
     const orderList = document.getElementById("orderList");
 
-    document.getElementById("loginBtn").onclick = async () => {
+    document.getElementById("loginBtn").onclick = async () => {message.textContent = "Login button clicked!";
       message.textContent = "Logging in...";
       try {
         await signInWithEmailAndPassword(
