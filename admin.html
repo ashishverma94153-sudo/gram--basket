@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRAM BASKET Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f7f2;
+      margin: 0;
+      padding: 16px;
+    }
+    header {
+      background: #16753b;
+      color: white;
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .box {
+      background: white;
+      padding: 16px;
+      margin-top: 16px;
+      border-radius: 10px;
+    }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+    input {
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #16753b;
+      color: white;
+      border: 0;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛒 GRAM BASKET</h1>
+    <p>Admin Panel</p>
+  </header>
+
+  <div class="box">
+    <h2>Admin Login</h2>
+    <input type="email" id="email" placeholder="Admin Email">
+    <input type="password" id="password" placeholder="Admin Password">
+    <button onclick="login()">Login</button>
+    <p id="message">Firebase कनेक्शन अभी जोड़ना बाकी है।</p>
+  </div>
+
+  <div class="box">
+    <h2>ऑर्डर</h2>
+    <p>Firebase कनेक्शन के बाद यहाँ ग्राहक के ऑर्डर दिखेंगे।</p>
+  </div>
+
+  <script>
+    function login() {
+      document.getElementById("message").textContent =
+        "Firebase Login अभी जोड़ा नहीं गया है।";
+    }
+  </script>
+</body>
+</html>
