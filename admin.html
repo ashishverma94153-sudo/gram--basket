@@ -3,69 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GRAM BASKET Admin</title>
+  <title>GRAM BASKET - Admin Panel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f3f7f2;
+      background: #f1f5f9;
       margin: 0;
-      padding: 16px;
-    }
-    header {
-      background: #16753b;
-      color: white;
-      padding: 16px;
-      border-radius: 10px;
-      text-align: center;
+      padding: 20px;
     }
     .box {
+      max-width: 600px;
+      margin: 30px auto;
       background: white;
-      padding: 16px;
-      margin-top: 16px;
-      border-radius: 10px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #0002;
     }
+    h1 { color: #15803d; text-align: center; }
     input, button {
-      box-sizing: border-box;
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-    input {
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #16753b;
-      color: white;
-      border: 0;
+      margin: 8px 0;
+      box-sizing: border-box;
       font-size: 16px;
     }
+    button {
+      background: #15803d;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+    }
+    .order {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+    #orders { display: none; }
+    #message { overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🛒 GRAM BASKET</h1>
-    <p>Admin Panel</p>
-  </header>
-
   <div class="box">
-    <h2>Admin Login</h2>
-    <input type="email" id="email" placeholder="Admin Email">
-    <input type="password" id="password" placeholder="Admin Password">
-    <button onclick="login()">Login</button>
-    <p id="message">Firebase कनेक्शन अभी जोड़ना बाकी है।</p>
+    <h1>GRAM BASKET</h1>
+    <h3>Admin Login</h3>
+
+    <input id="email" type="email" placeholder="Admin email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <p id="message"></p>
+
+    <section id="orders">
+      <h2>Customer Orders</h2>
+      <button id="refreshBtn">Refresh Orders</button>
+      <div id="orderList"></div>
+      <button id="logoutBtn">Logout</button>
+    </section>
   </div>
 
-  <div class="box">
-    <h2>ऑर्डर</h2>
-    <p>Firebase कनेक्शन के बाद यहाँ ग्राहक के ऑर्डर दिखेंगे।</p>
-  </div>
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
-  <script>
-    function login() {
-      document.getElementById("message").textContent =
-        "Firebase Login अभी जोड़ा नहीं गया है।";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      orderBy
+    } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+    // Firebase Console se apna web app config yahan bharo.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
+      authDomain: "gram-basket.firebaseapp.com",
+      projectId: "gram-basket",
+      storageBucket: "gram-basket.firebasestorage.app",
+      messagingSenderId: "334817273306",
+       
+    appId: "1:334817273306:web:7876254dcc3a83801e8ce3",
+  
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const message = document.getElementById("message");
+    const ordersSection = document.getElementById("orders");
+    const orderList = document.getElementById("orderList");
+
+    document.getElementById("loginBtn").onclick = async () => {
+      message.textContent = "Logging in...";
+      try {
+        await signInWithEmailAndPassword(
+          auth,
+          document.getElementById("email").value.trim(),
+          document.getElementById("password").value
+        );
+        message.textContent = "Login successful.";
+      } catch (error) {
+        message.textContent = "Login failed: " + error.message;
+      }
+    };
+
+    onAuthStateChanged(auth, user => {
+      ordersSection.style.display = user ? "block" : "none";
+      if (user) loadOrders();
+      else orderList.replaceChildren();
+    });
+
+    async function loadOrders() {
+      orderList.textContent = "Loading orders...";
+      try {
+        const snapshot = await getDocs(
+          query(collection(db, "Orders"), orderBy("customerName"))
+        );
+
+        orderList.replaceChildren();
+
+        if (snapshot.empty) {
+          orderList.textContent = "Abhi koi order nahi mila.";
+          return;
+        }
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const card = document.createElement("div");
+          card.className = "order";
+
+          const title = document.createElement("h3");
+          title.textContent = "Order: " + docSnap.id;
+          card.appendChild(title);
+
+          ["customerName", "mobile", "address", "total", "status"].forEach(key => {
+            const p = document.createElement("p");
+            p.textContent = key + ": " + (data[key] ?? "N/A");
+            card.appendChild(p);
+          });
+
+          orderList.appendChild(card);
+        });
+      } catch (error) {
+        orderList.textContent =
+          "Orders load nahi hue: " + error.message +
+          ". Firestore Security Rules check karne honge.";
+      }
     }
+
+    document.getElementById("refreshBtn").onclick = loadOrders;
+
+    document.getElementById("logoutBtn").onclick = async () => {
+      await signOut(auth);
+      message.textContent = "Logged out.";
+    };
   </script>
 </body>
 </html>
