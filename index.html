@@ -19,7 +19,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 </head>
 <body>
 <header><h1>🛒 GRAM BASKET</h1><p>आपके गाँव और बाजार का थोक किराना सप्लायर</p></header>
-<div class="notice">📦 थोक बिक्री: बोरी, कट्टा, पैकेट, दर्जन, क्रेट और पूरे गत्ते। दिखाई गई कीमतें केवल उदाहरण हैं—ऑर्डर लेने से पहले अपनी वास्तविक थोक दरें अपडेट करें।</div>
+<div class="notice">📦 थोक बिक्री: बोरी, कट्टा, पैकेट, दर्जन, क्रेट और पूरे गत्ते। जरूरी: दिखाई गई कीमतें केवल उदाहरण हैं, वास्तविक रेट नहीं। खरीद-बिक्री से पहले हर उत्पाद की सही कीमत अपडेट करें। ऑर्डर WhatsApp में खुलेगा; भेजने के लिए ग्राहक को Send दबाना होगा।</div>
 <div class="tools">
 <input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()">
 <select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
@@ -33,7 +33,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <input id="customerName" placeholder="दुकान / ग्राहक का नाम" required>
 <input id="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" required>
 <textarea id="address" placeholder="गाँव, पोस्ट, जिला और पूरा पता" required></textarea>
-<button class="order-button" type="submit">ऑर्डर का सारांश तैयार करें</button>
+<button class="order-button" type="submit">WhatsApp पर ऑर्डर भेजें</button>
 </form><p id="message" role="status"></p>
 </section>
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
@@ -73,7 +73,7 @@ function showProducts(){
  const cat=document.getElementById("category").value;
  const list=products.filter(p=>(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q))&&(!cat||p.category===cat));
  document.getElementById("count").textContent=`${list.length} प्रोडक्ट दिख रहे हैं · कुल ${products.length} प्रोडक्ट`;
- document.getElementById("products").innerHTML=list.map(p=>`<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div><div class="price">उदाहरण कीमत: ₹${p.price}</div><button onclick="addItem(${p.id})">+ कार्ट में जोड़ें</button></div>`).join("")||"<p>कोई सामान नहीं मिला।</p>";
+ document.getElementById("products").innerHTML=list.map(p=>`<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div><div class="price">उदाहरण रेट: ₹${p.price}</div><button onclick="addItem(${p.id})">+ कार्ट में जोड़ें</button></div>`).join("")||"<p>कोई सामान नहीं मिला।</p>";
 }
 function addItem(id){cart[id]=(cart[id]||0)+1;saveCart();showCart()}
 function changeQty(id,amount){cart[id]=(cart[id]||0)+amount;if(cart[id]<=0)delete cart[id];saveCart();showCart()}
@@ -83,17 +83,41 @@ function showCart(){
  if(!selected.length)box.textContent="अभी कार्ट खाली है।";
  else box.innerHTML=selected.map(p=>`<div class="cartrow"><div>${p.name}<br><small>${p.pack} · ₹${p.price} प्रति पैक</small></div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button> ${cart[p.id]} <button onclick="changeQty(${p.id},1)">+</button></div><strong>₹${p.price*cart[p.id]}</strong></div>`).join("");
  const total=selected.reduce((s,p)=>s+p.price*cart[p.id],0);
- document.getElementById("total").textContent="कुल उदाहरण कीमत: ₹"+total;
+ document.getElementById("total").textContent="कुल अनुमानित कीमत: ₹"+total;
 }
-document.getElementById("orderForm").addEventListener("submit",function(e){
- e.preventDefault();
- const selected=products.filter(p=>cart[p.id]);
- if(!selected.length){alert("पहले कार्ट में सामान जोड़ें।");return}
- const order={customerName:document.getElementById("customerName").value.trim(),mobile:document.getElementById("mobile").value.trim(),address:document.getElementById("address").value.trim(),items:selected.map(p=>({id:p.id,name:p.name,category:p.category,pack:p.pack,unitPrice:p.price,quantity:cart[p.id],lineTotal:p.price*cart[p.id]})),total:selected.reduce((s,p)=>s+p.price*cart[p.id],0),createdAt:new Date().toISOString(),status:"Pending"};
- const summary=order.items.map(i=>`${i.name} (${i.pack}) × ${i.quantity} = ₹${i.lineTotal}`).join("\n");
- document.getElementById("message").textContent=`ऑर्डर सारांश तैयार हुआ, लेकिन अभी भेजा नहीं गया है।\n${order.customerName}, ${order.mobile}\n${summary}\nकुल उदाहरण कीमत: ₹${order.total}\nअभी Firebase में सेव नहीं हुआ।`;
- console.log("Order summary only:",order);
+document.getElementById("orderForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const selected = products.filter(p => cart[p.id]);
+  if (!selected.length) {
+    alert("पहले कार्ट में सामान जोड़ें।");
+    return;
+  }
+  const customerName = document.getElementById("customerName").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const total = selected.reduce((sum, p) => sum + p.price * cart[p.id], 0);
+  const items = selected.map(p =>
+    `• ${p.name} (${p.pack}) × ${cart[p.id]} = ₹${p.price * cart[p.id]}`
+  ).join("\n");
+  const orderMessage =
+`🛒 GRAM BASKET — नया थोक ऑर्डर
+
+👤 ग्राहक/दुकान: ${customerName}
+📱 मोबाइल: ${mobile}
+📍 पता: ${address}
+
+📦 ऑर्डर:
+${items}
+
+💰 कुल अनुमानित कीमत: ₹${total}
+
+ध्यान दें: दिखाई गई कीमतें उदाहरण हैं। कृपया सामान की उपलब्धता, मात्रा और अंतिम कीमत की पुष्टि करें।`;
+  document.getElementById("message").textContent =
+    "WhatsApp खुल रहा है। ऑर्डर भेजने के लिए वहाँ Send दबाएँ।";
+  const whatsappURL = "https://wa.me/919919213659?text=" + encodeURIComponent(orderMessage);
+  window.location.href = whatsappURL;
 });
+
 showProducts();showCart();
 </script>
 </body>
