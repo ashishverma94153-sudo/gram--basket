@@ -89,6 +89,10 @@ function showProducts(){
 }
 function addItem(id){cart[id]=(cart[id]||0)+1;saveCart();showCart()}
 function changeQty(id,amount){cart[id]=(cart[id]||0)+amount;if(cart[id]<=0)delete cart[id];saveCart();showCart()}
+// Expose functions used by inline HTML onclick/oninput handlers
+window.showProducts = showProducts;
+window.addItem = addItem;
+window.changeQty = changeQty;
 function showCart(){
  const selected=products.filter(p=>cart[p.id]);
  const box=document.getElementById("cart");
