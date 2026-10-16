@@ -27,7 +27,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <h2>🛍️ थोक किराना कैटलॉग</h2>
 <div id="count" style="padding:0 12px;color:#666"></div>
 <div id="products" class="products"></div>
-<section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" onclick="clearCart()" style="background:#a52828">कार्ट खाली करें</button></section>
+<section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" id="clearCartBtn" style="background:#a52828">कार्ट खाली करें</button></section>
 <section><h2>📦 ऑर्डर की जानकारी</h2>
 <form id="orderForm">
 <input id="customerName" placeholder="दुकान / ग्राहक का नाम" required>
@@ -94,6 +94,7 @@ window.showProducts = showProducts;
 window.addItem = addItem;
 window.changeQty = changeQty;
 window.clearCart = clearCart;
+document.getElementById("clearCartBtn").addEventListener("click", clearCart);
 function showCart(){
  const selected=products.filter(p=>cart[p.id]);
  const box=document.getElementById("cart");
