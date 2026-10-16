@@ -1,10 +1,100 @@
-<!DOCTYPE html><html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GRAM BASKET</title><style>* {  box-sizing: border-box;}body {  margin: 0;  font-family: Arial, sans-serif;  background: #f3f7f2;  color: #222;}header {  background: #16753b;  color: white;  padding: 18px;  text-align: center;}header h1 {  margin: 0;  font-size: 27px;}header p {  margin-bottom: 0;}.search {  width: 92%;  padding: 13px;  margin: 15px 4%;  border: 1px solid #ccc;  border-radius: 8px;  font-size: 16px;}h2 {  padding-left: 12px;}.products {  display: grid;  grid-template-columns: repeat(2, minmax(0, 1fr));  gap: 12px;  padding: 12px;}.card {  background: white;  border-radius: 10px;  padding: 14px 10px;  text-align: center;  box-shadow: 0 2px 7px #ddd;}.emoji {  font-size: 38px;}.card h3 {  margin: 8px 0;}.price {  color: #16753b;  font-weight: bold;}button {  background: #16753b;  color: white;  border: 0;  border-radius: 7px;  padding: 11px;  cursor: pointer;  font-size: 15px;}.card button {  width: 100%;  margin-top: 8px;}section {  background: white;  margin: 14px 12px;  padding: 15px;  border-radius: 10px;}input, textarea {  width: 100%;  padding: 12px;  margin: 7px 0;  border: 1px solid #bbb;  border-radius: 7px;  font-size: 16px;}.order-button {  width: 100%;  margin-top: 10px;}#message {  font-weight: bold;  color: #16753b;}footer {  text-align: center;  padding: 20px;  color: #666;}</style></head><body><header>  <h1>🛒 GRAM BASKET</h1>  <p>आपके गाँव की अपनी किराना दुकान</p></header><input  id="search"  class="search"  type="search"  placeholder="🔍 सामान खोजें..."  oninput="showProducts()"><h2>🛍️ किराना सामान</h2><div id="products" class="products"></div><section>  <h2>🛒 आपका कार्ट</h2>  <div id="cart">अभी कार्ट खाली है।</div>  <h3 id="total">कुल: ₹0</h3></section><section>  <h2>📦 ऑर्डर की जानकारी</h2>  <form id="orderForm">    <input id="customerName" placeholder="आपका पूरा नाम" required>    <input id="mobile" type="tel"      inputmode="numeric"      pattern="[0-9]{10}"      maxlength="10"      placeholder="10 अंकों का मोबाइल नंबर"      required>    <textarea id="address"      placeholder="गाँव, पोस्ट और पूरा पता"      required></textarea>    <button class="order-button" type="submit">      ऑर्डर तैयार करें    </button>  </form>  <p id="message"></p></section><footer>  GRAM BASKET © 2026</footer><script>const items = [  {id: 1, name: "चावल 1 kg", price: 60, emoji: "🍚"},  {id: 2, name: "आटा 1 kg", price: 40, emoji: "🌾"},  {id: 3, name: "चीनी 1 kg", price: 45, emoji: "🧂"},  {id: 4, name: "खाने का तेल 1 L", price: 140, emoji: "🛢️"},  {id: 5, name: "दाल 1 kg", price: 110, emoji: "🫘"},  {id: 6, name: "नमक 1 kg", price: 20, emoji: "🧂"},  {id: 7, name: "बिस्कुट", price: 10, emoji: "🍪"},  {id: 8, name: "साबुन", price: 35, emoji: "🧼"},  {id: 9, name: "चाय 250 g", price: 90, emoji: "🍵"},  {id: 10, name: "मैगी", price: 15, emoji: "🍜"}];const cart = {};function showProducts() {  const query = document.getElementById("search")    .value.toLowerCase();  const filtered = items.filter(item =>    item.name.toLowerCase().includes(query)  );  document.getElementById("products").innerHTML =    filtered.map(item => `      <div class="card">        <div class="emoji">${item.emoji}</div>        <h3>${item.name}</h3>        <p class="price">₹${item.price}</p>        <button onclick="addItem(${item.id})">          + कार्ट में जोड़ें        </button>      </div>    `).join("");}function addItem(id) {  cart[id] = (cart[id] || 0) + 1;  showCart();}function changeQty(id, amount) {  cart[id] = (cart[id] || 0) + amount;  if (cart[id] <= 0) {    delete cart[id];  }  showCart();}function showCart() {  const selected = items.filter(item => cart[item.id]);  const box = document.getElementById("cart");  if (selected.length === 0) {    box.textContent = "अभी कार्ट खाली है।";  } else {    box.innerHTML = selected.map(item => `      <p>        ${item.name} — ₹${item.price * cart[item.id]}        <button onclick="changeQty(${item.id}, -1)">−</button>        ${cart[item.id]}        <button onclick="changeQty(${item.id}, 1)">+</button>      </p>    `).join("");  }  const sum = selected.reduce(    (total, item) => total + item.price * cart[item.id], 0  );  document.getElementById("total").textContent = "कुल: ₹" + sum;}document.getElementById("orderForm").addEventListener(  "submit", function(event) {    event.preventDefault();    if (Object.keys(cart).length === 0) {      alert("पहले कार्ट में सामान जोड़ें।");      return;    }    const order = {      customerName: document.getElementById("customerName").value,      mobile: document.getElementById("mobile").value,      address: document.getElementById("address").value,      items: items        .filter(item => cart[item.id])        .map(item => ({
-  name: item.name,
-  price: item.price,
-  quantity: cart[item.id]
-})),      total: items.reduce(        (sum, item) => sum + item.price * (cart[item.id] || 0), 0      )    };    document.getElementById("message").textContent =      "फॉर्म सही है। अभी ऑर्डर केवल इस डेमो में तैयार हुआ है; दुकान पर भेजा नहीं गया।";    console.log(order);  });showProducts();
-showCart();
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAM BASKET — थोक किराना</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f7f2;color:#222}
+header{background:#16753b;color:#fff;padding:18px 14px;text-align:center}header h1{margin:0;font-size:27px}header p{margin:7px 0 0}
+.notice{margin:12px;padding:12px;background:#fff3cd;border-radius:8px;font-size:14px}
+.tools{display:flex;gap:8px;padding:0 12px;flex-wrap:wrap}.tools input,.tools select{flex:1;min-width:140px;padding:12px;border:1px solid #bbb;border-radius:8px;font-size:15px;background:white}
+h2{padding-left:12px}.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+.card{background:white;border-radius:10px;padding:12px 9px;text-align:center;box-shadow:0 2px 7px #ddd;display:flex;flex-direction:column}
+.emoji{font-size:34px}.card h3{font-size:15px;margin:7px 0}.category{font-size:12px;color:#666}.pack{font-size:13px;margin:6px 0}.price{color:#16753b;font-weight:bold;margin:5px 0}.card button,button{background:#16753b;color:white;border:0;border-radius:7px;padding:10px;cursor:pointer;font-size:14px}.card button{margin-top:auto}
+section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,textarea{width:100%;padding:12px;margin:7px 0;border:1px solid #bbb;border-radius:7px;font-size:16px}.order-button{width:100%;margin-top:10px}#message{font-weight:bold;color:#16753b;overflow-wrap:anywhere}footer{text-align:center;padding:20px;color:#666}
+.cartrow{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #eee;padding:8px 0}.cartrow button{padding:6px 10px}.qty{white-space:nowrap}
+@media(min-width:700px){.products{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><h1>🛒 GRAM BASKET</h1><p>आपके गाँव और बाजार का थोक किराना सप्लायर</p></header>
+<div class="notice">📦 थोक बिक्री: बोरी, कट्टा, पैकेट, दर्जन, क्रेट और पूरे गत्ते। दिखाई गई कीमतें केवल उदाहरण हैं—ऑर्डर लेने से पहले अपनी वास्तविक थोक दरें अपडेट करें।</div>
+<div class="tools">
+<input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()">
+<select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
+</div>
+<h2>🛍️ थोक किराना कैटलॉग</h2>
+<div id="count" style="padding:0 12px;color:#666"></div>
+<div id="products" class="products"></div>
+<section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" onclick="clearCart()" style="background:#a52828">कार्ट खाली करें</button></section>
+<section><h2>📦 ऑर्डर की जानकारी</h2>
+<form id="orderForm">
+<input id="customerName" placeholder="दुकान / ग्राहक का नाम" required>
+<input id="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" required>
+<textarea id="address" placeholder="गाँव, पोस्ट, जिला और पूरा पता" required></textarea>
+<button class="order-button" type="submit">ऑर्डर का सारांश तैयार करें</button>
+</form><p id="message" role="status"></p>
+</section>
+<footer>GRAM BASKET © 2026 · थोक किराना</footer>
+<script>
+const rawProducts = [
+["चावल (साधारण)","अनाज","🌾","50 kg बोरी",2500],["चावल (मध्यम)","अनाज","🌾","26 kg बोरी",1450],["बासमती चावल","अनाज","🌾","25 kg बोरी",2200],["सेला चावल","अनाज","🌾","25 kg बोरी",1700],["टूटा चावल","अनाज","🌾","30 kg बोरी",1050],["गेहूँ","अनाज","🌾","50 kg बोरी",1500],["आटा","आटा व बेसन","🌾","30 kg कट्टा",1050],["आटा पैक्ड","आटा व बेसन","🌾","10 kg पैक",380],["मैदा","आटा व बेसन","🌾","30 kg कट्टा",1050],["सूजी","आटा व बेसन","🌾","30 kg कट्टा",1200],["बेसन","आटा व बेसन","🫘","25 kg कट्टा",2100],["दलिया","आटा व बेसन","🌾","25 kg कट्टा",1100],
+["अरहर दाल","दालें","🫘","30 kg कट्टा",3900],["चना दाल","दालें","🫘","30 kg कट्टा",2400],["मसूर दाल","दालें","🫘","30 kg कट्टा",2700],["मूँग दाल","दालें","🫘","30 kg कट्टा",3300],["उड़द दाल","दालें","🫘","30 kg कट्टा",3600],["साबुत चना","दालें","🫘","30 kg कट्टा",2100],["काला चना","दालें","🫘","30 kg कट्टा",2400],["सफेद मटर","दालें","🫘","30 kg कट्टा",1800],["राजमा","दालें","🫘","25 kg कट्टा",3000],["मटर दाल","दालें","🫘","30 kg कट्टा",2100],
+["चीनी","चीनी व गुड़","🍬","50 kg बोरी",2300],["गुड़","चीनी व गुड़","🍯","30 kg कट्टा",1800],["मिश्री","चीनी व गुड़","🍬","10 kg पैक",850],
+["सरसों तेल","तेल व घी","🛢️","1 L × 15 बोतल कार्टन",2100],["रिफाइंड तेल","तेल व घी","🛢️","1 L × 15 पाउच कार्टन",1800],["सोयाबीन तेल","तेल व घी","🛢️","1 L × 15 पाउच कार्टन",1750],["पामोलिन तेल","तेल व घी","🛢️","15 kg टिन",1900],["देसी घी","तेल व घी","🥫","1 L × 12 पैक कार्टन",6000],
+["नमक","नमक व मसाले","🧂","1 kg × 25 पैक गत्ता",350],["हल्दी पाउडर","नमक व मसाले","🧂","1 kg × 10 पैक गत्ता",950],["लाल मिर्च पाउडर","नमक व मसाले","🌶️","1 kg × 10 पैक गत्ता",1500],["धनिया पाउडर","नमक व मसाले","🌿","1 kg × 10 पैक गत्ता",900],["जीरा","नमक व मसाले","🌿","5 kg पैक",1800],["गरम मसाला","नमक व मसाले","🧂","100 g × 100 पैक गत्ता",1400],["राई","नमक व मसाले","🌿","10 kg पैक",900],["हींग","नमक व मसाले","🧂","डिस्प्ले बॉक्स",500],["काली मिर्च","नमक व मसाले","🌶️","5 kg पैक",3000],
+["चायपत्ती","चाय व कॉफी","🍵","250 g × 40 पैक गत्ता",2200],["चायपत्ती प्रीमियम","चाय व कॉफी","🍵","1 kg × 10 पैक गत्ता",3500],["इंस्टेंट कॉफी","चाय व कॉफी","☕","डिस्प्ले कार्टन",1800],["दूध पाउडर","डेयरी व पेय","🥛","1 kg × 12 पैक कार्टन",2400],
+["बिस्कुट (ग्लूकोज़)","बिस्कुट व कुकीज़","🍪","बड़ा कार्टन",650],["क्रीम बिस्कुट","बिस्कुट व कुकीज़","🍪","बड़ा कार्टन",900],["नमकीन बिस्कुट","बिस्कुट व कुकीज़","🍪","बड़ा कार्टन",750],["कुकीज़","बिस्कुट व कुकीज़","🍪","बड़ा कार्टन",1200],["रस्क","बिस्कुट व कुकीज़","🍞","बड़ा कार्टन",800],
+["आलू चिप्स","नमकीन व स्नैक्स","🍟","डिस्प्ले गत्ता",500],["भुजिया","नमकीन व स्नैक्स","🥨","1 kg × 10 पैक गत्ता",1200],["मिक्स नमकीन","नमकीन व स्नैक्स","🥨","1 kg × 10 पैक गत्ता",1100],["पापड़","नमकीन व स्नैक्स","🥠","डिस्प्ले कार्टन",700],["मूँगफली","नमकीन व स्नैक्स","🥜","10 kg पैक",1200],
+["इंस्टेंट नूडल्स","नूडल्स व रेडी फूड","🍜","पूरा कार्टन",650],["पास्ता","नूडल्स व रेडी फूड","🍝","500 g × 24 पैक कार्टन",900],["सेवई","नूडल्स व रेडी फूड","🍜","10 kg पैक",800],["सूप पैकेट","नूडल्स व रेडी फूड","🥣","डिस्प्ले गत्ता",700],
+["टॉफी","टॉफी व चॉकलेट","🍬","डिस्प्ले बॉक्स",300],["लॉलीपॉप","टॉफी व चॉकलेट","🍭","डिस्प्ले बॉक्स",250],["चॉकलेट","टॉफी व चॉकलेट","🍫","डिस्प्ले कार्टन",900],["च्यूइंग गम","टॉफी व चॉकलेट","🍬","डिस्प्ले बॉक्स",250],
+["कोल्ड ड्रिंक","पेय पदार्थ","🥤","पूरी क्रेट",700],["पैक्ड पानी","पेय पदार्थ","💧","1 L × 12 बोतल कार्टन",180],["फ्रूट ड्रिंक","पेय पदार्थ","🧃","छोटा कार्टन",500],["एनर्जी ड्रिंक","पेय पदार्थ","🥤","पूरा कार्टन",900],
+["टमाटर सॉस","सॉस व पैक्ड फूड","🍅","1 kg × 12 बोतल कार्टन",1200],["सोया सॉस","सॉस व पैक्ड फूड","🥫","कार्टन",900],["अचार","सॉस व पैक्ड फूड","🥭","1 kg × 12 जार कार्टन",1500],["जैम","सॉस व पैक्ड फूड","🍓","कार्टन",1100],["पीनट बटर","सॉस व पैक्ड फूड","🥜","कार्टन",1800],
+["नहाने का साबुन","साबुन व पर्सनल केयर","🧼","100 g × 48 पीस गत्ता",1500],["कपड़े धोने का साबुन","साबुन व पर्सनल केयर","🧼","बड़ा गत्ता",900],["शैम्पू सैशे","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",500],["शैम्पू बोतल","साबुन व पर्सनल केयर","🧴","कार्टन",1400],["टूथपेस्ट","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",900],["टूथब्रश","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",500],["हेयर ऑयल","साबुन व पर्सनल केयर","🧴","कार्टन",1100],["कंघी","साबुन व पर्सनल केयर","💇","डिस्प्ले गत्ता",300],["क्रीम","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",700],["टैल्कम पाउडर","साबुन व पर्सनल केयर","🧴","कार्टन",1200],
+["डिटर्जेंट पाउडर","कपड़े व घर की सफाई","🧺","1 kg × 20 पैक गत्ता",1500],["फिनाइल","कपड़े व घर की सफाई","🧴","1 L × 12 बोतल कार्टन",900],["फ्लोर क्लीनर","कपड़े व घर की सफाई","🧹","कार्टन",1000],["डिशवॉश बार","कपड़े व घर की सफाई","🧽","पूरा गत्ता",700],["डिशवॉश लिक्विड","कपड़े व घर की सफाई","🧴","कार्टन",850],["स्क्रबर","कपड़े व घर की सफाई","🧽","डिस्प्ले पैक",300],["टॉयलेट क्लीनर","कपड़े व घर की सफाई","🧴","कार्टन",1100],
+["माचिस","घरेलू उपयोग","🔥","पूरा गत्ता",450],["मोमबत्ती","घरेलू उपयोग","🕯️","डिस्प्ले गत्ता",300],["अगरबत्ती","घरेलू उपयोग","🪔","डिस्प्ले गत्ता",600],["कपूर","घरेलू उपयोग","🪔","डिस्प्ले बॉक्स",400],["बैटरी","घरेलू उपयोग","🔋","डिस्प्ले गत्ता",700],["प्लास्टिक बैग","दुकान व पैकिंग","🛍️","बंडल",350],["पैकिंग टेप","दुकान व पैकिंग","📦","पूरा कार्टन",500],["किचन फॉइल","दुकान व पैकिंग","🥡","कार्टन",900],
+["डायपर","बेबी केयर","👶","पूरा कार्टन",1800],["बेबी वाइप्स","बेबी केयर","👶","कार्टन",900],["बेबी सोप","बेबी केयर","🧼","गत्ता",700],
+["किशमिश","सूखे मेवे व बीज","🍇","10 kg पैक",2200],["बादाम","सूखे मेवे व बीज","🥜","5 kg पैक",3500],["काजू","सूखे मेवे व बीज","🥜","5 kg पैक",4000],["कद्दू के बीज","सूखे मेवे व बीज","🌰","5 kg पैक",1500],["सौंफ","सूखे मेवे व बीज","🌿","10 kg पैक",1600],["साबुत धनिया","सूखे मेवे व बीज","🌿","10 kg पैक",900],
+["कंडेंस्ड मिल्क","डेयरी व पेय","🥛","कार्टन",1800],["शरबत","डेयरी व पेय","🍹","750 ml × 12 बोतल कार्टन",1200],["इलेक्ट्रोलाइट पाउडर","डेयरी व पेय","🥤","डिस्प्ले गत्ता",600]
+];
+const products = rawProducts.map((p,i)=>({id:i+1,name:p[0],category:p[1],emoji:p[2],pack:p[3],price:p[4]}));
+const cart = {};
+try {
+ const savedCart = JSON.parse(localStorage.getItem("gramBasketWholesaleCart") || "{}");
+ Object.keys(savedCart).forEach(k => { if (Number.isFinite(savedCart[k]) && savedCart[k] > 0) cart[k] = Math.floor(savedCart[k]); });
+} catch (_) {}
+function saveCart(){ try { localStorage.setItem("gramBasketWholesaleCart", JSON.stringify(cart)); } catch (_) {} }
+function clearCart(){ Object.keys(cart).forEach(k=>delete cart[k]); saveCart(); showCart(); document.getElementById("message").textContent="कार्ट खाली कर दिया गया है।"; }
+const categories = [...new Set(products.map(p=>p.category))];
+document.getElementById("category").innerHTML += categories.map(c=>`<option value="${c}">${c}</option>`).join("");
+function showProducts(){
+ const q=document.getElementById("search").value.trim().toLowerCase();
+ const cat=document.getElementById("category").value;
+ const list=products.filter(p=>(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q))&&(!cat||p.category===cat));
+ document.getElementById("count").textContent=`${list.length} प्रोडक्ट दिख रहे हैं · कुल ${products.length} प्रोडक्ट`;
+ document.getElementById("products").innerHTML=list.map(p=>`<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div><div class="price">उदाहरण कीमत: ₹${p.price}</div><button onclick="addItem(${p.id})">+ कार्ट में जोड़ें</button></div>`).join("")||"<p>कोई सामान नहीं मिला।</p>";
+}
+function addItem(id){cart[id]=(cart[id]||0)+1;saveCart();showCart()}
+function changeQty(id,amount){cart[id]=(cart[id]||0)+amount;if(cart[id]<=0)delete cart[id];saveCart();showCart()}
+function showCart(){
+ const selected=products.filter(p=>cart[p.id]);
+ const box=document.getElementById("cart");
+ if(!selected.length)box.textContent="अभी कार्ट खाली है।";
+ else box.innerHTML=selected.map(p=>`<div class="cartrow"><div>${p.name}<br><small>${p.pack} · ₹${p.price} प्रति पैक</small></div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button> ${cart[p.id]} <button onclick="changeQty(${p.id},1)">+</button></div><strong>₹${p.price*cart[p.id]}</strong></div>`).join("");
+ const total=selected.reduce((s,p)=>s+p.price*cart[p.id],0);
+ document.getElementById("total").textContent="कुल उदाहरण कीमत: ₹"+total;
+}
+document.getElementById("orderForm").addEventListener("submit",function(e){
+ e.preventDefault();
+ const selected=products.filter(p=>cart[p.id]);
+ if(!selected.length){alert("पहले कार्ट में सामान जोड़ें।");return}
+ const order={customerName:document.getElementById("customerName").value.trim(),mobile:document.getElementById("mobile").value.trim(),address:document.getElementById("address").value.trim(),items:selected.map(p=>({id:p.id,name:p.name,category:p.category,pack:p.pack,unitPrice:p.price,quantity:cart[p.id],lineTotal:p.price*cart[p.id]})),total:selected.reduce((s,p)=>s+p.price*cart[p.id],0),createdAt:new Date().toISOString(),status:"Pending"};
+ const summary=order.items.map(i=>`${i.name} (${i.pack}) × ${i.quantity} = ₹${i.lineTotal}`).join("\n");
+ document.getElementById("message").textContent=`ऑर्डर सारांश तैयार हुआ, लेकिन अभी भेजा नहीं गया है।\n${order.customerName}, ${order.mobile}\n${summary}\nकुल उदाहरण कीमत: ₹${order.total}\nअभी Firebase में सेव नहीं हुआ।`;
+ console.log("Order summary only:",order);
+});
+showProducts();showCart();
 </script>
 </body>
 </html>
-  
