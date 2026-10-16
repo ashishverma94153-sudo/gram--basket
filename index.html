@@ -93,6 +93,7 @@ function changeQty(id,amount){cart[id]=(cart[id]||0)+amount;if(cart[id]<=0)delet
 window.showProducts = showProducts;
 window.addItem = addItem;
 window.changeQty = changeQty;
+window.clearCart = clearCart;
 function showCart(){
  const selected=products.filter(p=>cart[p.id]);
  const box=document.getElementById("cart");
