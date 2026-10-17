@@ -209,7 +209,13 @@ ${escapeHTML(data.address || "—")}</p>
 <ul>${items}</ul>
 
 <p><b>कुल कीमत:</b>
-₹${escapeHTML(data.total ?? "—")}</p>
+₹${escapeHTML(
+  data.total ??
+  data.totalPrice ??
+  data.grandTotal ??
+  data.amount ??
+  "कीमत उपलब्ध नहीं"
+)}</p>
 
 <p class="muted">समय: ${escapeHTML(createdAt)}</p>
 
