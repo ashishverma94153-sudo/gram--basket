@@ -180,15 +180,26 @@ const card = document.createElement("div");
 card.className = "order";
 
 const items = Array.isArray(data.items)
-? data.items.map(product =>
-"<li>" +
-escapeHTML(product.name || product.productName || "Item") +
-" — Qty " +
-escapeHTML(product.quantity ?? product.qty ?? 1) +
-"</li>"
-).join("")
-: "<li>Item details उपलब्ध नहीं हैं</li>";
+? data.items.map(product => {
+    const name = product.name || product.productName || "Item";
+    const quantity = Number(product.quantity ?? product.qty ?? 1);
+    const price = Number(
+      product.price ?? product.unitPrice ?? product.rate
+    );
 
+    const priceText =
+      product.price != null ||
+      product.unitPrice != null ||
+      product.rate != null
+        ? `₹${(price * quantity).toFixed(2)}`
+        : "कीमत उपलब्ध नहीं";
+
+    return `<li>
+      ${escapeHTML(name)} — Qty ${escapeHTML(quantity)}
+      — ${priceText}
+    </li>`;
+  }).join("")
+: "<li>Item details उपलब्ध नहीं हैं</li>";
 const createdAt = data.createdAt?.toDate
 ? data.createdAt.toDate().toLocaleString("en-IN")
 : "उपलब्ध नहीं";
