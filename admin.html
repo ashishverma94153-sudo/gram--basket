@@ -1,171 +1,288 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GRAM BASKET - Admin Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f1f5f9;
-      margin: 0;
-      padding: 20px;
-    }
-    .box {
-      max-width: 600px;
-      margin: 30px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 3px 12px #0002;
-    }
-    h1 { color: #15803d; text-align: center; }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-    button {
-      background: #15803d;
-      color: white;
-      border: 0;
-      border-radius: 6px;
-    }
-    .order {
-      border: 1px solid #ddd;
-      padding: 12px;
-      margin: 12px 0;
-      border-radius: 8px;
-      overflow-wrap: anywhere;
-    }
-    #orders { display: none; }
-    #message { overflow-wrap: anywhere; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRAM BASKET Admin</title>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f2f7f3;margin:0;color:#183324}
+header{background:#176b3a;color:white;padding:18px}
+main{max-width:900px;margin:20px auto;padding:12px}
+.card{background:white;padding:16px;border-radius:12px;margin-bottom:15px}
+input,button,select{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ccc;font-size:16px}
+button{background:#176b3a;color:white;border:0;font-weight:bold}
+.hidden{display:none}
+.order{background:white;border:1px solid #ddd;padding:14px;margin:12px 0;border-radius:10px;overflow-wrap:anywhere}
+.muted{color:#666;font-size:14px}
+.error{color:#b00020}
+.success{color:#176b3a}
+</style>
 </head>
+
 <body>
-  <div class="box">
-    <h1>GRAM BASKET</h1>
-    <h3>Admin Login</h3><p style="color:blue;">ADMIN PAGE LOADED</p>
 
-    <input id="email" type="email" placeholder="Admin email">
-    <input id="password" type="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-    <p id="message"></p>
+<header>
+<h2>🛒 GRAM BASKET</h2>
+<p>Admin Panel — Order Management</p>
+</header>
 
-    <section id="orders">
-      <h2>Customer Orders</h2>
-      <button id="refreshBtn">Refresh Orders</button>
-      <div id="orderList"></div>
-      <button id="logoutBtn">Logout</button>
-    </section>
-  </div>
+<main>
 
-  <script type="module">
-    import { initializeApp } from
-      "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+<section class="card" id="loginBox">
+<h3>Admin Login</h3>
 
-    import {
-      getAuth,
-      signInWithEmailAndPassword,
-      onAuthStateChanged,
-      signOut
-    } from
-      "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+<form id="loginForm">
+<input id="email" type="email" placeholder="Admin Email" required>
+<input id="password" type="password" placeholder="Password" required>
+<button type="submit">Login</button>
+</form>
 
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      query,
-      orderBy
-    } from
-      "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+<p id="message"></p>
+</section>
 
-    // Firebase Console se apna web app config yahan bharo.
-    const firebaseConfig = {
-      apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
-      authDomain: "gram-basket.firebaseapp.com",
-      projectId: "gram-basket",
-      storageBucket: "gram-basket.firebasestorage.app",
-      messagingSenderId: "334817273306",
-       
-    appId: "1:334817273306:web:7876254dcc3a83801e8ce3",};
-  
+<section class="card hidden" id="dashboard">
+<h3>📦 Customer Orders</h3>
+<p id="count" class="muted"></p>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+<button id="refresh">Refresh Orders</button>
+<button id="logout">Logout</button>
 
-    const message = document.getElementById("message");
-    const ordersSection = document.getElementById("orders");
-    const orderList = document.getElementById("orderList");
+<div id="orders"></div>
+</section>
 
-    document.getElementById("loginBtn").onclick = async () => {message.textContent = "Login button clicked!";
-      message.textContent = "Logging in...";
-      try {
-        await signInWithEmailAndPassword(
-          auth,
-          document.getElementById("email").value.trim(),
-          document.getElementById("password").value
-        );
-        message.textContent = "Login successful.";
-      } catch (error) {
-        message.textContent = "Login failed: " + error.message;
-      }
-    };
+</main>
 
-    onAuthStateChanged(auth, user => {
-      ordersSection.style.display = user ? "block" : "none";
-      if (user) loadOrders();
-      else orderList.replaceChildren();
-    });
+<script type="module">
 
-    async function loadOrders() {
-      orderList.textContent = "Loading orders...";
-      try {
-        const snapshot = await getDocs(
-          query(collection(db, "Orders"), orderBy("customerName"))
-        );
+import {initializeApp}
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
-        orderList.replaceChildren();
+import {
+getAuth,
+signInWithEmailAndPassword,
+onAuthStateChanged,
+signOut
+}
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-        if (snapshot.empty) {
-          orderList.textContent = "Abhi koi order nahi mila.";
-          return;
-        }
+import {
+getFirestore,
+collection,
+getDocs,
+query,
+orderBy,
+doc,
+updateDoc
+}
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const card = document.createElement("div");
-          card.className = "order";
+const firebaseConfig = {
+apiKey: "AIzaSyDAKq1tjy1UzRGV11N47S0zxqbqBLnGjHs",
+authDomain: "gram-basket.firebaseapp.com",
+projectId: "gram-basket",
+storageBucket: "gram-basket.firebasestorage.app",
+messagingSenderId: "334817273306",
+appId: "1:334817273306:web:7876254dcc3a83801e8ce3"
+};
 
-          const title = document.createElement("h3");
-          title.textContent = "Order: " + docSnap.id;
-          card.appendChild(title);
+const ADMIN_UID = "gP0392TzG0Ot1P7uw65Hke8nQUL2";
 
-          ["customerName", "mobile", "address", "total", "status"].forEach(key => {
-            const p = document.createElement("p");
-            p.textContent = key + ": " + (data[key] ?? "N/A");
-            card.appendChild(p);
-          });
+const statuses = [
+"नया",
+"कन्फर्म",
+"तैयार हो रहा है",
+"डिलीवरी के लिए निकला",
+"पूरा हुआ",
+"रद्द"
+];
 
-          orderList.appendChild(card);
-        });
-      } catch (error) {
-        orderList.textContent =
-          "Orders load nahi hue: " + error.message +
-          ". Firestore Security Rules check karne honge.";
-      }
-    }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    document.getElementById("refreshBtn").onclick = loadOrders;
+const $ = id => document.getElementById(id);
 
-    document.getElementById("logoutBtn").onclick = async () => {
-      await signOut(auth);
-      message.textContent = "Logged out.";
-    };
-  </script>
+$("loginForm").addEventListener("submit", async e => {
+e.preventDefault();
+
+$("message").textContent = "Login हो रहा है...";
+
+try {
+await signInWithEmailAndPassword(
+auth,
+$("email").value.trim(),
+$("password").value
+);
+} catch(error) {
+$("message").className = "error";
+$("message").textContent =
+"Login Error: " + (error.code || error.message);
+}
+});
+
+$("logout").onclick = () => signOut(auth);
+$("refresh").onclick = loadOrders;
+
+onAuthStateChanged(auth, async user => {
+
+if (!user) {
+$("loginBox").classList.remove("hidden");
+$("dashboard").classList.add("hidden");
+return;
+}
+
+if (user.uid !== ADMIN_UID) {
+$("message").textContent =
+"इस अकाउंट को Admin की अनुमति नहीं है।";
+
+await signOut(auth);
+return;
+}
+
+$("loginBox").classList.add("hidden");
+$("dashboard").classList.remove("hidden");
+
+loadOrders();
+
+});
+
+async function loadOrders() {
+
+const box = $("orders");
+box.textContent = "Orders लोड हो रहे हैं...";
+
+try {
+
+const result = await getDocs(
+query(
+collection(db, "Orders"),
+orderBy("createdAt", "desc")
+)
+);
+
+$("count").textContent =
+"कुल Orders: " + result.size;
+
+if (result.empty) {
+box.textContent = "अभी कोई Order नहीं है।";
+return;
+}
+
+box.replaceChildren();
+
+result.forEach(item => {
+
+const data = item.data();
+
+const card = document.createElement("div");
+card.className = "order";
+
+const items = Array.isArray(data.items)
+? data.items.map(product =>
+"<li>" +
+escapeHTML(product.name || product.productName || "Item") +
+" — Qty " +
+escapeHTML(product.quantity ?? product.qty ?? 1) +
+"</li>"
+).join("")
+: "<li>Item details उपलब्ध नहीं हैं</li>";
+
+const createdAt = data.createdAt?.toDate
+? data.createdAt.toDate().toLocaleString("en-IN")
+: "उपलब्ध नहीं";
+
+card.innerHTML = `
+<h3>Order #${escapeHTML(item.id.slice(0,8))}</h3>
+
+<p><b>ग्राहक:</b>
+${escapeHTML(data.customerName || "—")}</p>
+
+<p><b>मोबाइल:</b>
+${escapeHTML(data.mobile || "—")}</p>
+
+<p><b>पता:</b>
+${escapeHTML(data.address || "—")}</p>
+
+<p><b>सामान:</b></p>
+<ul>${items}</ul>
+
+<p><b>कुल कीमत:</b>
+₹${escapeHTML(data.total ?? "—")}</p>
+
+<p class="muted">समय: ${escapeHTML(createdAt)}</p>
+
+<label>Order Status</label>
+
+<select class="status">
+${statuses.map(status =>
+`<option ${status === (data.status || "नया") ? "selected" : ""}>
+${status}
+</option>`
+).join("")}
+</select>
+
+<button class="save">Status Save करें</button>
+
+<p class="result muted"></p>
+`;
+
+card.querySelector(".save").onclick = async () => {
+
+const resultText = card.querySelector(".result");
+resultText.textContent = "Save हो रहा है...";
+
+try {
+
+await updateDoc(
+doc(db, "Orders", item.id),
+{
+status: card.querySelector(".status").value
+}
+);
+
+resultText.className = "result success";
+resultText.textContent = "Status सफलतापूर्वक Save हो गया।";
+
+} catch(error) {
+
+resultText.className = "result error";
+resultText.textContent =
+"Save Error: " + (error.code || error.message);
+
+}
+
+};
+
+box.appendChild(card);
+
+});
+
+} catch(error) {
+
+box.innerHTML =
+"<p class='error'>Orders Load Error: " +
+escapeHTML(error.code || error.message) +
+"</p>";
+
+}
+
+}
+
+function escapeHTML(value) {
+
+return String(value ?? "").replace(/[&<>"']/g, char => ({
+"&": "&amp;",
+"<": "&lt;",
+">": "&gt;",
+'"': "&quot;",
+"'": "&#39;"
+}[char]));
+
+}
+
+</script>
+
 </body>
 </html>
