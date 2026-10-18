@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GRAM BASKET — थोक किराना</title>
+<title>GRAM BASKET — किराना ऑर्डर</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f7f2;color:#222}
 header{background:#16753b;color:#fff;padding:18px 14px;text-align:center}header h1{margin:0;font-size:27px}header p{margin:7px 0 0}
@@ -18,13 +18,13 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 </style>
 </head>
 <body>
-<header><h1>🛒 GRAM BASKET</h1><p>आपके गाँव और बाजार का थोक किराना सप्लायर</p></header>
-<div class="notice">📦 थोक बिक्री: बोरी, कट्टा, पैकेट, दर्जन, क्रेट और पूरे गत्ते। दिखाई गई कीमतें केवल उदाहरण हैं—ऑर्डर लेने से पहले अपनी वास्तविक थोक दरें अपडेट करें।</div>
+<header><h1>🛒 GRAM BASKET</h1><p>आपके गाँव की अपनी किराना दुकान</p></header>
+<div class="notice">📌 कीमतें अभी उदाहरण हैं। बिक्री शुरू करने से पहले नीचे कोड में अपने सही दाम भरें। अनाज/दालों में खुला सामान 250 ग्राम से, 250 ग्राम के अंतर में चुनें।</div>
 <div class="tools">
 <input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()">
 <select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
 </div>
-<h2>🛍️ थोक किराना कैटलॉग</h2>
+<h2>🛍️ किराना सामान</h2>
 <div id="count" style="padding:0 12px;color:#666"></div>
 <div id="products" class="products"></div>
 <section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" id="clearCartBtn" style="background:#a52828">कार्ट खाली करें</button></section>
@@ -33,13 +33,20 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <input id="customerName" placeholder="दुकान / ग्राहक का नाम" required>
 <input id="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" required>
 <textarea id="address" placeholder="गाँव, पोस्ट, जिला और पूरा पता" required></textarea>
-<button class="order-button" type="submit">ऑर्डर का सारांश तैयार करें</button>
+<button class="order-button" type="submit">ऑर्डर WhatsApp पर भेजें</button>
 </form><p id="message" role="status"></p>
+</section>
+<section id="adminPriceSection" style="border:2px solid #16753b">
+<h2>🔐 Admin: सामान की कीमत बदलें</h2>
+<p style="font-size:13px;color:#555">यहाँ सेव की गई कीमतें Firebase में रहेंगी और ग्राहकों की वेबसाइट पर दिखेंगी। केवल अधिकृत Admin खाते से लॉगिन करें।</p>
+<form id="adminLoginForm"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Admin password" required><button type="submit">Admin Login</button></form>
+<div id="adminEditor" style="display:none"><p id="adminStatus"></p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>सामान</th><th>पैक नियमित ₹</th><th>पैक सेल ₹ (0=नहीं)</th><th>खुला ₹/kg</th><th>खुला सेल ₹/kg (0=नहीं)</th></tr></thead><tbody id="priceRows"></tbody></table></div><button id="savePricesBtn" type="button" style="margin-top:12px">सभी कीमतें सेव करें</button><button id="adminLogoutBtn" type="button" style="background:#a52828;margin:12px">Logout</button></div>
 </section>
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
   authDomain: "gram-basket.firebaseapp.com",
@@ -50,6 +57,8 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const ADMIN_UID = "gP0392TzG0Ot1P7uw65Hke8nQUL2";
 const rawProducts = [
 ["चावल (साधारण)","अनाज","🌾","50 kg बोरी",2500],["चावल (मध्यम)","अनाज","🌾","26 kg बोरी",1450],["बासमती चावल","अनाज","🌾","25 kg बोरी",2200],["सेला चावल","अनाज","🌾","25 kg बोरी",1700],["टूटा चावल","अनाज","🌾","30 kg बोरी",1050],["गेहूँ","अनाज","🌾","50 kg बोरी",1500],["आटा","आटा व बेसन","🌾","30 kg कट्टा",1050],["आटा पैक्ड","आटा व बेसन","🌾","10 kg पैक",380],["मैदा","आटा व बेसन","🌾","30 kg कट्टा",1050],["सूजी","आटा व बेसन","🌾","30 kg कट्टा",1200],["बेसन","आटा व बेसन","🫘","25 kg कट्टा",2100],["दलिया","आटा व बेसन","🌾","25 kg कट्टा",1100],
 ["अरहर दाल","दालें","🫘","30 kg कट्टा",3900],["चना दाल","दालें","🫘","30 kg कट्टा",2400],["मसूर दाल","दालें","🫘","30 kg कट्टा",2700],["मूँग दाल","दालें","🫘","30 kg कट्टा",3300],["उड़द दाल","दालें","🫘","30 kg कट्टा",3600],["साबुत चना","दालें","🫘","30 kg कट्टा",2100],["काला चना","दालें","🫘","30 kg कट्टा",2400],["सफेद मटर","दालें","🫘","30 kg कट्टा",1800],["राजमा","दालें","🫘","25 kg कट्टा",3000],["मटर दाल","दालें","🫘","30 kg कट्टा",2100],
@@ -70,69 +79,63 @@ const rawProducts = [
 ["किशमिश","सूखे मेवे व बीज","🍇","10 kg पैक",2200],["बादाम","सूखे मेवे व बीज","🥜","5 kg पैक",3500],["काजू","सूखे मेवे व बीज","🥜","5 kg पैक",4000],["कद्दू के बीज","सूखे मेवे व बीज","🌰","5 kg पैक",1500],["सौंफ","सूखे मेवे व बीज","🌿","10 kg पैक",1600],["साबुत धनिया","सूखे मेवे व बीज","🌿","10 kg पैक",900],
 ["कंडेंस्ड मिल्क","डेयरी व पेय","🥛","कार्टन",1800],["शरबत","डेयरी व पेय","🍹","750 ml × 12 बोतल कार्टन",1200],["इलेक्ट्रोलाइट पाउडर","डेयरी व पेय","🥤","डिस्प्ले गत्ता",600]
 ];
-const products = rawProducts.map((p,i)=>({id:i+1,name:p[0],category:p[1],emoji:p[2],pack:p[3],price:p[4]}));
+// कीमतें उदाहरण हैं। असली दाम लगाने के लिए नीचे rawProducts की pack कीमतें बदलें।
+// जिन चीजों को खुला बेच सकते हैं, उनके लिए loose price/kg भी product data में सेट होता है।
+const looseCategories = new Set(["अनाज","दालें","चीनी व गुड़","आटा व बेसन","सूखे मेवे व बीज","नमक व मसाले"]);
+let products = rawProducts.map((p,i)=>{
+  const match = p[3].match(/(\d+(?:\.\d+)?)\s*kg/i);
+  const packKg = match ? Number(match[1]) : 0;
+  const loose = looseCategories.has(p[1]) && packKg > 0;
+  const packPrice = Number(p[4]);
+  // खुला दाम थोक प्रति-किलो दर से थोड़ा अधिक रखा गया है; कृपया वास्तविक दाम जाँचें।
+  const loosePricePerKg = loose ? Math.ceil((packPrice / packKg) * 1.12) : 0;
+  return {id:i+1,name:p[0],category:p[1],emoji:p[2],pack:p[3],packPrice,packSalePrice:0,packKg,loose,loosePricePerKg,looseSalePricePerKg:0};
+});
 const cart = {};
-try {
- const savedCart = JSON.parse(localStorage.getItem("gramBasketWholesaleCart") || "{}");
- Object.keys(savedCart).forEach(k => { if (Number.isFinite(savedCart[k]) && savedCart[k] > 0) cart[k] = Math.floor(savedCart[k]); });
-} catch (_) {}
-function saveCart(){ try { localStorage.setItem("gramBasketWholesaleCart", JSON.stringify(cart)); } catch (_) {} }
-function clearCart(){ Object.keys(cart).forEach(k=>delete cart[k]); saveCart(); showCart(); document.getElementById("message").textContent="कार्ट खाली कर दिया गया है।"; }
-const categories = [...new Set(products.map(p=>p.category))];
+try { const savedCart=JSON.parse(localStorage.getItem("gramBasketCartV2")||"{}"); Object.assign(cart,savedCart); } catch(_) {}
+function saveCart(){try{localStorage.setItem("gramBasketCartV2",JSON.stringify(cart));}catch(_) {}}
+function activePrice(p,mode){const regular=mode==="loose"?p.loosePricePerKg:p.packPrice;const sale=mode==="loose"?p.looseSalePricePerKg:p.packSalePrice;return sale>0&&sale<regular?sale:regular;}
+function priceHTML(regular,sale){if(sale>0&&sale<regular){const off=Math.round((regular-sale)*100/regular);return `<div class="price"><del style="color:#777;font-weight:normal">₹${regular}</del> <b>₹${sale}</b> <span style="background:#ffe0e0;color:#b00020;border-radius:5px;padding:2px 5px;font-size:11px">${off}% OFF</span></div>`;}return `<div class="price">₹${regular}</div>`;}
+function clearCart(){Object.keys(cart).forEach(k=>delete cart[k]);saveCart();showCart();document.getElementById("message").textContent="कार्ट खाली कर दिया गया है।";}
+const categories=[...new Set(products.map(p=>p.category))];
 document.getElementById("category").innerHTML += categories.map(c=>`<option value="${c}">${c}</option>`).join("");
 function showProducts(){
- const q=document.getElementById("search").value.trim().toLowerCase();
- const cat=document.getElementById("category").value;
+ const q=document.getElementById("search").value.trim().toLowerCase(), cat=document.getElementById("category").value;
  const list=products.filter(p=>(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q))&&(!cat||p.category===cat));
- document.getElementById("count").textContent=`${list.length} प्रोडक्ट दिख रहे हैं · कुल ${products.length} प्रोडक्ट`;
- document.getElementById("products").innerHTML=list.map(p=>`<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div><div class="price">उदाहरण कीमत: ₹${p.price}</div><button onclick="addItem(${p.id})">+ कार्ट में जोड़ें</button></div>`).join("")||"<p>कोई सामान नहीं मिला।</p>";
+ document.getElementById("count").textContent=`${list.length} सामान · कुल ${products.length} सामान`;
+ document.getElementById("products").innerHTML=list.map(p=>{
+  const looseOption=p.loose?`<label style="font-size:13px;text-align:left;margin-top:8px">खुला वजन (न्यूनतम 250 ग्राम)<select id="mode-${p.id}" style="width:100%;padding:8px;margin-top:4px;border:1px solid #bbb;border-radius:6px"><option value="pack">${p.pack} — पैक/थोक</option><option value="loose">खुला — ₹${p.looseSalePricePerKg>0&&p.looseSalePricePerKg<p.loosePricePerKg?p.looseSalePricePerKg:p.loosePricePerKg}/kg</option></select></label><label id="weight-label-${p.id}" style="display:none;font-size:13px;text-align:left">वजन (kg; जैसे 0.25, 0.5, 2.5)<input id="weight-${p.id}" type="number" min="0.25" step="0.25" value="0.25" style="width:100%;padding:8px;margin:4px 0;border:1px solid #bbb;border-radius:6px"></label>`:"";
+  const regular=p.packPrice,sale=p.packSalePrice;
+  return `<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div>${priceHTML(regular,sale)}${looseOption}<button style="margin-top:10px" onclick="addProduct(${p.id})">+ कार्ट में जोड़ें</button></div>`;
+ }).join("")||"<p>कोई सामान नहीं मिला।</p>";
+ list.filter(p=>p.loose).forEach(p=>{const sel=document.getElementById(`mode-${p.id}`);sel.addEventListener('change',()=>{document.getElementById(`weight-label-${p.id}`).style.display=sel.value==='loose'?'block':'none';});});
 }
-function addItem(id){cart[id]=(cart[id]||0)+1;saveCart();showCart()}
-function changeQty(id,amount){cart[id]=(cart[id]||0)+amount;if(cart[id]<=0)delete cart[id];saveCart();showCart()}
-// Expose functions used by inline HTML onclick/oninput handlers
-window.showProducts = showProducts;
-window.addItem = addItem;
-window.changeQty = changeQty;
-window.clearCart = clearCart;
-document.getElementById("clearCartBtn").addEventListener("click", clearCart);
-function showCart(){
- const selected=products.filter(p=>cart[p.id]);
- const box=document.getElementById("cart");
- if(!selected.length)box.textContent="अभी कार्ट खाली है।";
- else box.innerHTML=selected.map(p=>`<div class="cartrow"><div>${p.name}<br><small>${p.pack} · ₹${p.price} प्रति पैक</small></div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button> ${cart[p.id]} <button onclick="changeQty(${p.id},1)">+</button></div><strong>₹${p.price*cart[p.id]}</strong></div>`).join("");
- const total=selected.reduce((s,p)=>s+p.price*cart[p.id],0);
- document.getElementById("total").textContent="कुल उदाहरण कीमत: ₹"+total;
-}
-document.getElementById("orderForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const selected = products.filter(p => cart[p.id]);
-  if (!selected.length) { alert("पहले कार्ट में सामान जोड़ें।"); return; }
-  const customerName = document.getElementById("customerName").value.trim();
-  const mobile = document.getElementById("mobile").value.trim();
-  const address = document.getElementById("address").value.trim();
-  if (!/^[0-9]{10}$/.test(mobile)) { alert("10 अंकों का सही मोबाइल नंबर भरें।"); return; }
-  const total = selected.reduce((sum, p) => sum + p.price * cart[p.id], 0);
-  const orderItems = selected.map(p => ({name:p.name, pack:p.pack, price:p.price, quantity:cart[p.id], lineTotal:p.price*cart[p.id]}));
-  const message = document.getElementById("message");
-  message.textContent = "ऑर्डर Firebase में सेव हो रहा है...";
-  try {
-    await addDoc(collection(db, "Orders"), {
-      customerName, mobile, address, items:orderItems, total,
-      status:"नया", createdAt:serverTimestamp(), source:"website"
-    });
-    const itemLines = selected.map(p => `• ${p.name} (${p.pack}) × ${cart[p.id]} = ₹${p.price * cart[p.id]}`).join("\n");
-    const orderMessage = `🛒 GRAM BASKET — नया थोक ऑर्डर\n\n👤 ग्राहक/दुकान: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 ऑर्डर:\n${itemLines}\n\n💰 कुल उदाहरण कीमत: ₹${total}\n\nकृपया उपलब्धता और अंतिम कीमत की पुष्टि करें।`;
-    message.textContent = "ऑर्डर Firebase में सेव हो गया है। WhatsApp खुल रहा है—वहाँ Send दबाएँ।";
-    const whatsappURL = "https://wa.me/919919213659?text=" + encodeURIComponent(orderMessage);
-    window.location.href = whatsappURL;
-  } catch (error) {
-    console.error("Firebase order save error:", error);
-    message.textContent = "ऑर्डर Firebase में सेव नहीं हुआ। WhatsApp नहीं खोला गया।";
-    alert("ऑर्डर सेव नहीं हुआ। Firebase Rules की अनुमति जाँचनी होगी।");
-  }
+function addProduct(id){const p=products.find(x=>x.id===id);const mode=p.loose?document.getElementById(`mode-${id}`).value:"pack";let qty=1;if(mode==="loose"){qty=Number(document.getElementById(`weight-${id}`).value);if(!Number.isFinite(qty)||qty<0.25||Math.round(qty*4)!==qty*4){alert("खुला वजन कम से कम 250 ग्राम और 250 ग्राम के अंतर में चुनें।");return;}}
+ const key=`${id}_${mode}`;if(!cart[key])cart[key]={id,mode,qty:0};cart[key].qty=Math.round((cart[key].qty+qty)*100)/100;saveCart();showCart();}
+function changeQty(key,delta){const row=cart[key];if(!row)return;const p=products.find(x=>x.id===row.id);if(row.mode==='loose'){row.qty=Math.round((row.qty+delta*0.25)*100)/100;if(row.qty<0.25)delete cart[key];}else{row.qty+=delta;if(row.qty<=0)delete cart[key];}saveCart();showCart();}
+function removeItem(key){delete cart[key];saveCart();showCart();}
+window.showProducts=showProducts;window.addProduct=addProduct;window.changeQty=changeQty;window.removeItem=removeItem;window.clearCart=clearCart;
+document.getElementById("clearCartBtn").addEventListener("click",clearCart);
+function cartRows(){return Object.entries(cart).map(([key,row])=>({key,...row,p:products.find(p=>p.id===row.id)})).filter(x=>x.p&&x.qty>0);}
+function lineTotal(row){return Math.round(activePrice(row.p,row.mode)*(row.mode==='loose'?row.qty:row.qty)*100)/100;}
+function showCart(){const rows=cartRows(),box=document.getElementById("cart");if(!rows.length)box.textContent="अभी कार्ट खाली है।";else box.innerHTML=rows.map(r=>{const unit=r.mode==='loose'?`खुला ${r.qty} kg × ₹${activePrice(r.p,'loose')}/kg`:`${r.p.pack} × ${r.qty}`;const price=r.mode==='loose'?activePrice(r.p,'loose'):activePrice(r.p,'pack');return `<div class="cartrow"><div style="flex:1"><b>${r.p.name}</b><br><small>${unit}</small><br><strong>₹${lineTotal(r).toFixed(2)}</strong></div><div class="qty"><button onclick="changeQty('${r.key}',-1)">−</button> ${r.mode==='loose'?r.qty+'kg':r.qty} <button onclick="changeQty('${r.key}',1)">+</button><br><button style="background:#a52828;margin-top:5px" onclick="removeItem('${r.key}')">हटाएँ</button></div></div>`;}).join("");const total=rows.reduce((sum,r)=>sum+lineTotal(r),0);document.getElementById("total").textContent="कुल: ₹"+total.toFixed(2);}
+document.getElementById("orderForm").addEventListener("submit", async function(e){
+ e.preventDefault();const rows=cartRows();if(!rows.length){alert("पहले कार्ट में सामान जोड़ें।");return;}
+ const customerName=document.getElementById("customerName").value.trim(),mobile=document.getElementById("mobile").value.trim(),address=document.getElementById("address").value.trim();
+ if(!/^[0-9]{10}$/.test(mobile)){alert("10 अंकों का सही मोबाइल नंबर भरें।");return;}
+ const total=Math.round(rows.reduce((sum,r)=>sum+lineTotal(r),0)*100)/100;
+ const orderItems=rows.map(r=>({name:r.p.name,category:r.p.category,pack:r.p.pack,mode:r.mode,unit:r.mode==='loose'?'kg':'pack',price:activePrice(r.p,r.mode),regularPrice:r.mode==='loose'?r.p.loosePricePerKg:r.p.packPrice,quantity:r.qty,lineTotal:lineTotal(r)}));
+ const msg=document.getElementById("message");msg.textContent="ऑर्डर Firebase में सेव हो रहा है…";
+ try{await addDoc(collection(db,"Orders"),{customerName,mobile,address,items:orderItems,total,status:"नया",createdAt:serverTimestamp(),source:"website"});
+ const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
+ const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर\n\n👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
+ msg.textContent="ऑर्डर सेव हो गया। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
+ }catch(error){console.error(error);msg.textContent="ऑर्डर सेव नहीं हुआ। Firebase Rules/इंटरनेट जाँचें।";alert("ऑर्डर Firebase में सेव नहीं हुआ।");}
 });
 
-showProducts();showCart();
-</script>
-</body>
-</html>
+async function loadSavedPrices(){
+ try{const snap=await getDocs(collection(db,"Products"));if(!snap.empty){const saved={};snap.forEach(d=>saved[String(d.id)]=d.data());products=products.map(p=>saved[String(p.id)]?{...p,...saved[String(p.id)]}:p);showProducts();showCart();}}
+ catch(e){console.warn("Products collection not readable yet; using example prices",e);}
+}
+function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
+document.getElementById("adminLoginForm").addEventListener("submit",async e=>{e.preventDefault();const status=document.getElementById("adminStatus");status.textContent="लॉगिन हो रहा है…";try{const cred=a
