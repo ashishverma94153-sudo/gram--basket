@@ -139,4 +139,69 @@ async function loadSavedPrices(){
 }
 function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
 // Admin controls are optional on the customer page. Do not stop product rendering if they are absent.
-if (document.getElementById("adminLoginForm") && document.getElementById("savePricesBtn") && documen
+if (
+  document.getElementById("adminLoginForm") &&
+  document.getElementById("savePricesBtn") &&
+  document.getElementById("adminLogoutBtn")
+) {
+  renderPriceEditor();
+
+  document.getElementById("adminLoginForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const email = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value;
+
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+
+      if (result.user.uid !== ADMIN_UID) {
+        await signOut(auth);
+        alert("यह Admin अकाउंट अधिकृत नहीं है।");
+        return;
+      }
+
+      document.getElementById("adminEditor").style.display = "block";
+      document.getElementById("adminStatus").textContent = "Admin लॉगिन सफल!";
+      renderPriceEditor();
+    } catch (error) {
+      alert("Admin लॉगिन असफल: " + error.message);
+    }
+  });
+
+  document.getElementById("savePricesBtn").addEventListener("click", async function() {
+    if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+      alert("पहले अधिकृत Admin लॉगिन करें।");
+      return;
+    }
+
+    try {
+      for (const p of products) {
+        await setDoc(doc(db, "Products", String(p.id)), {
+          packPrice: Number(document.getElementById("pack-" + p.id).value),
+          packSalePrice: Number(document.getElementById("packsale-" + p.id).value),
+          loosePricePerKg: p.loose ? Number(document.getElementById("loose-" + p.id).value) : 0,
+          looseSalePricePerKg: p.loose ? Number(document.getElementById("loosesale-" + p.id).value) : 0
+        }, { merge: true });
+      }
+
+      alert("कीमतें सेव हो गईं!");
+      await loadSavedPrices();
+      renderPriceEditor();
+    } catch (error) {
+      alert("कीमतें सेव नहीं हुईं: " + error.message);
+    }
+  });
+
+  document.getElementById("adminLogoutBtn").addEventListener("click", async function() {
+    await signOut(auth);
+    document.getElementById("adminEditor").style.display = "none";
+    document.getElementById("adminStatus").textContent = "Admin लॉगआउट हो गया।";
+  });
+}
+
+showProducts();
+showCart();
+loadSavedPrices();
+</script>
+</body>
+</html>
