@@ -26,7 +26,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 </div>
 <h2>🛍️ किराना सामान</h2>
 <div id="count" style="padding:0 12px;color:#666"></div>
-<div id="products" class="products"><p>सामान लोड हो रहा है…</p></div>
+<div id="products" class="products"></div>
 <section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" id="clearCartBtn" style="background:#a52828">कार्ट खाली करें</button></section>
 <section><h2>📦 ऑर्डर की जानकारी</h2>
 <form id="orderForm">
@@ -36,8 +36,30 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <button class="order-button" type="submit">ऑर्डर WhatsApp पर भेजें</button>
 </form><p id="message" role="status"></p>
 </section>
+<section id="adminPriceSection" style="border:2px solid #16753b">
+<h2>🔐 Admin: सामान की कीमत बदलें</h2>
+<p style="font-size:13px;color:#555">यहाँ सेव की गई कीमतें Firebase में रहेंगी और ग्राहकों की वेबसाइट पर दिखेंगी। केवल अधिकृत Admin खाते से लॉगिन करें।</p>
+<form id="adminLoginForm"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Admin password" required><button type="submit">Admin Login</button></form>
+<div id="adminEditor" style="display:none"><p id="adminStatus"></p>
+<div style="border:1px solid #ddd;padding:12px;margin:12px 0;border-radius:8px">
+<h3>➕ नया सामान जोड़ें</h3>
+<input id="newName" placeholder="सामान का नाम">
+<input id="newCategory" placeholder="कैटेगरी (जैसे अनाज)">
+<input id="newEmoji" placeholder="इमोजी (जैसे 🌾" value="🛒">
+<input id="newPack" placeholder="पैक / मात्रा (जैसे 1 kg पैक)">
+<input id="newPrice" type="number" min="0" step="0.01" placeholder="कीमत ₹">
+<button id="addNewProductBtn" type="button">सामान जोड़ें</button>
+</div>
+<div style="border:1px solid #ddd;padding:12px;margin:12px 0;border-radius:8px">
+<h3>🛠️ सामान बदलें / हटाएँ</h3><p style="font-size:13px">नाम, कैटेगरी, पैक और कीमत बदलकर सेव करें। हटाने पर सामान ग्राहक वेबसाइट से छिप जाएगा।</p>
+<div id="productManager"></div>
+</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>सामान</th><th>पैक नियमित ₹</th><th>पैक सेल ₹ (0=नहीं)</th><th>खुला ₹/kg</th><th>खुला सेल ₹/kg (0=नहीं)</th></tr></thead><tbody id="priceRows"></tbody></table></div><button id="savePricesBtn" type="button" style="margin-top:12px">सभी कीमतें सेव करें</button><button id="adminLogoutBtn" type="button" style="background:#a52828;margin:12px">Logout</button></div>
+</section>
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
   authDomain: "gram-basket.firebaseapp.com",
@@ -46,6 +68,10 @@ const firebaseConfig = {
   messagingSenderId: "334817273306",
   appId: "1:334817273306:web:7876254dcc3a83801e8ce3"
 };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const ADMIN_UID = "gP0392TzG0Ot1P7uw65Hke8nQUL2";
 const rawProducts = [
 ["चावल (साधारण)","अनाज","🌾","50 kg बोरी",2500],["चावल (मध्यम)","अनाज","🌾","26 kg बोरी",1450],["बासमती चावल","अनाज","🌾","25 kg बोरी",2200],["सेला चावल","अनाज","🌾","25 kg बोरी",1700],["टूटा चावल","अनाज","🌾","30 kg बोरी",1050],["गेहूँ","अनाज","🌾","50 kg बोरी",1500],["आटा","आटा व बेसन","🌾","30 kg कट्टा",1050],["आटा पैक्ड","आटा व बेसन","🌾","10 kg पैक",380],["मैदा","आटा व बेसन","🌾","30 kg कट्टा",1050],["सूजी","आटा व बेसन","🌾","30 kg कट्टा",1200],["बेसन","आटा व बेसन","🫘","25 kg कट्टा",2100],["दलिया","आटा व बेसन","🌾","25 kg कट्टा",1100],
 ["अरहर दाल","दालें","🫘","30 kg कट्टा",3900],["चना दाल","दालें","🫘","30 kg कट्टा",2400],["मसूर दाल","दालें","🫘","30 kg कट्टा",2700],["मूँग दाल","दालें","🫘","30 kg कट्टा",3300],["उड़द दाल","दालें","🫘","30 kg कट्टा",3600],["साबुत चना","दालें","🫘","30 kg कट्टा",2100],["काला चना","दालें","🫘","30 kg कट्टा",2400],["सफेद मटर","दालें","🫘","30 kg कट्टा",1800],["राजमा","दालें","🫘","25 kg कट्टा",3000],["मटर दाल","दालें","🫘","30 kg कट्टा",2100],
@@ -69,7 +95,7 @@ const rawProducts = [
 // कीमतें उदाहरण हैं। असली दाम लगाने के लिए नीचे rawProducts की pack कीमतें बदलें।
 // जिन चीजों को खुला बेच सकते हैं, उनके लिए loose price/kg भी product data में सेट होता है।
 const looseCategories = new Set(["अनाज","दालें","चीनी व गुड़","आटा व बेसन","सूखे मेवे व बीज","नमक व मसाले"]);
-const products = rawProducts.map((p,i)=>{
+let products = rawProducts.map((p,i)=>{
   const match = p[3].match(/(\d+(?:\.\d+)?)\s*kg/i);
   const packKg = match ? Number(match[1]) : 0;
   const loose = looseCategories.has(p[1]) && packKg > 0;
@@ -113,18 +139,17 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  const total=Math.round(rows.reduce((sum,r)=>sum+lineTotal(r),0)*100)/100;
  const orderItems=rows.map(r=>({name:r.p.name,category:r.p.category,pack:r.p.pack,mode:r.mode,unit:r.mode==='loose'?'kg':'pack',price:activePrice(r.p,r.mode),regularPrice:r.mode==='loose'?r.p.loosePricePerKg:r.p.packPrice,quantity:r.qty,lineTotal:lineTotal(r)}));
  const msg=document.getElementById("message");msg.textContent="ऑर्डर Firebase में सेव हो रहा है…";
- try{
- const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js");
- const { getFirestore, collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js");
- const app = initializeApp(firebaseConfig);
- const db = getFirestore(app);
- await addDoc(collection(db,"Orders"),{customerName,mobile,address,items:orderItems,total,status:"नया",createdAt:serverTimestamp(),source:"website"});
+ try{await addDoc(collection(db,"Orders"),{customerName,mobile,address,items:orderItems,total,status:"नया",createdAt:serverTimestamp(),source:"website"});
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
  const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर\n\n👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
  msg.textContent="ऑर्डर सेव हो गया। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
  }catch(error){console.error(error);msg.textContent="ऑर्डर सेव नहीं हुआ। Firebase Rules/इंटरनेट जाँचें।";alert("ऑर्डर Firebase में सेव नहीं हुआ।");}
 });
-showProducts();showCart();
-</script>
-</body>
-</html>
+
+async function loadSavedPrices(){
+ try{
+  const snap=await getDocs(collection(db,"Products"));
+  const saved={}; snap.forEach(d=>saved[String(d.id)]={...d.data(),id:d.data().id??(Number(d.id)||d.id)});
+  const base=rawProducts.map((p,i)=>{const id=i+1;const original=products.find(x=>x.id===id);return saved[String(id)]?{...original,...saved[String(id)],id}:original;}).filter(Boolean);
+  const custom=Object.entries(saved).filter(([id,p])=>!/^\d+$/.test(id)&&p.isActive!==false).map(([id,p])=>({...p,id:p.id??id}));
+  products=[...base.filter(p=>saved[String(p.id)]?.isAc
