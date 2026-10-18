@@ -40,20 +40,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <h2>🔐 Admin: सामान की कीमत बदलें</h2>
 <p style="font-size:13px;color:#555">यहाँ सेव की गई कीमतें Firebase में रहेंगी और ग्राहकों की वेबसाइट पर दिखेंगी। केवल अधिकृत Admin खाते से लॉगिन करें।</p>
 <form id="adminLoginForm"><input id="adminEmail" type="email" placeholder="Admin email" required><input id="adminPassword" type="password" placeholder="Admin password" required><button type="submit">Admin Login</button></form>
-<div id="adminEditor" style="display:none"><p id="adminStatus"></p>
-<div style="border:1px solid #ddd;padding:12px;margin:12px 0;border-radius:8px">
-<h3>➕ नया सामान जोड़ें</h3>
-<input id="newName" placeholder="सामान का नाम">
-<input id="newCategory" placeholder="कैटेगरी (जैसे अनाज)">
-<input id="newEmoji" placeholder="इमोजी (जैसे 🌾" value="🛒">
-<input id="newPack" placeholder="पैक / मात्रा (जैसे 1 kg पैक)">
-<input id="newPrice" type="number" min="0" step="0.01" placeholder="कीमत ₹">
-<button id="addNewProductBtn" type="button">सामान जोड़ें</button>
-</div>
-<div style="border:1px solid #ddd;padding:12px;margin:12px 0;border-radius:8px">
-<h3>🛠️ सामान बदलें / हटाएँ</h3><p style="font-size:13px">नाम, कैटेगरी, पैक और कीमत बदलकर सेव करें। हटाने पर सामान ग्राहक वेबसाइट से छिप जाएगा।</p>
-<div id="productManager"></div>
-</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>सामान</th><th>पैक नियमित ₹</th><th>पैक सेल ₹ (0=नहीं)</th><th>खुला ₹/kg</th><th>खुला सेल ₹/kg (0=नहीं)</th></tr></thead><tbody id="priceRows"></tbody></table></div><button id="savePricesBtn" type="button" style="margin-top:12px">सभी कीमतें सेव करें</button><button id="adminLogoutBtn" type="button" style="background:#a52828;margin:12px">Logout</button></div>
+<div id="adminEditor" style="display:none"><p id="adminStatus"></p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>सामान</th><th>पैक नियमित ₹</th><th>पैक सेल ₹ (0=नहीं)</th><th>खुला ₹/kg</th><th>खुला सेल ₹/kg (0=नहीं)</th></tr></thead><tbody id="priceRows"></tbody></table></div><button id="savePricesBtn" type="button" style="margin-top:12px">सभी कीमतें सेव करें</button><button id="adminLogoutBtn" type="button" style="background:#a52828;margin:12px">Logout</button></div>
 </section>
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
 <script type="module">
@@ -147,9 +134,8 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
 });
 
 async function loadSavedPrices(){
- try{
-  const snap=await getDocs(collection(db,"Products"));
-  const saved={}; snap.forEach(d=>saved[String(d.id)]={...d.data(),id:d.data().id??(Number(d.id)||d.id)});
-  const base=rawProducts.map((p,i)=>{const id=i+1;const original=products.find(x=>x.id===id);return saved[String(id)]?{...original,...saved[String(id)],id}:original;}).filter(Boolean);
-  const custom=Object.entries(saved).filter(([id,p])=>!/^\d+$/.test(id)&&p.isActive!==false).map(([id,p])=>({...p,id:p.id??id}));
-  products=[...base.filter(p=>saved[String(p.id)]?.isAc
+ try{const snap=await getDocs(collection(db,"Products"));if(!snap.empty){const saved={};snap.forEach(d=>saved[String(d.id)]=d.data());products=products.map(p=>saved[String(p.id)]?{...p,...saved[String(p.id)]}:p);showProducts();showCart();}}
+ catch(e){console.warn("Products collection not readable yet; using example prices",e);}
+}
+function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
+document.getElementById("adminLoginForm").addEventListener("submit",async e=>{e.preventDefault();const status=document.getElementById("adminStatus");status.textContent="लॉगिन हो रहा है…";try{const cred=a
