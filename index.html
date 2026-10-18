@@ -137,7 +137,6 @@ async function loadSavedPrices(){
  try{const snap=await getDocs(collection(db,"Products"));if(!snap.empty){const saved={};snap.forEach(d=>saved[String(d.id)]=d.data());products=products.map(p=>saved[String(p.id)]?{...p,...saved[String(p.id)]}:p);showProducts();showCart();}}
  catch(e){console.warn("Products collection not readable yet; using example prices",e);}
 }
-loadSavedPrices();showProducts();showCart();
-</script>
-</body>
-</html>
+function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
+// Admin controls are optional on the customer page. Do not stop product rendering if they are absent.
+if (document.getElementById("adminLoginForm") && document.getElementById("savePricesBtn") && documen
