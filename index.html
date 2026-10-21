@@ -139,4 +139,73 @@ async function loadSavedPrices(){
 }
 function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
 // Admin controls are optional on the customer page. Do not stop product rendering if they are absent.
-if (document.getElementById("adminLoginForm") && document.getElementById("savePricesBtn") && documen
+if (document.getElementById("adminLoginForm") && document.getElementById("savePricesBtn") && document.getElementById("adminLogoutBtn")) {
+document.getElementById("adminLoginForm").addEventListener("submit",async e=>{e.preventDefault();const status=document.getElementById("adminStatus");status.textContent="लॉगिन हो रहा है…";try{const cred=await signInWithEmailAndPassword(auth,document.getElementById("adminEmail").value.trim(),document.getElementById("adminPassword").value);if(cred.user.uid!==ADMIN_UID){await signOut(auth);throw new Error("यह Firebase UID अधिकृत Admin नहीं है।");}document.getElementById("adminEditor").style.display="block";status.textContent="Admin login सफल। कीमत बदलकर सेव करें।";renderPriceEditor();}catch(err){status.textContent="लॉगिन विफल: "+(err.message||"ईमेल/पासवर्ड जाँचें");}});
+document.getElementById("savePricesBtn").addEventListener("click",async()=>{const status=document.getElementById("adminStatus");if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID){status.textContent="पहले Admin login करें।";return;}status.textContent="कीमतें सेव हो रही हैं…";try{for(const p of products){const packPrice=Number(document.getElementById(`pack-${p.id}`).value);const packSalePrice=Number(document.getElementById(`packsale-${p.id}`).value)||0;const loosePricePerKg=p.loose?Number(document.getElementById(`loose-${p.id}`).value)||0:0;const looseSalePricePerKg=p.loose?Number(document.getElementById(`loosesale-${p.id}`).value)||0:0;if(![packPrice,packSalePrice,loosePricePerKg,looseSalePricePerKg].every(n=>Number.isFinite(n)&&n>=0))throw new Error("कीमत 0 या उससे अधिक होनी चाहिए।");if(packSalePrice>0&&packSalePrice>=packPrice)throw new Error(p.name+": सेल कीमत नियमित पैक कीमत से कम रखें या 0 करें।");if(looseSalePricePerKg>0&&looseSalePricePerKg>=loosePricePerKg)throw new Error(p.name+": खुली सेल कीमत प्रति किलो नियमित कीमत से कम रखें या 0 करें।");const updated={...p,packPrice,packSalePrice,loosePricePerKg,looseSalePricePerKg};await setDoc(doc(db,"Products",String(p.id)),updated);p.packPrice=packPrice;p.packSalePrice=packSalePrice;p.loosePricePerKg=loosePricePerKg;p.looseSalePricePerKg=looseSalePricePerKg;}showProducts();showCart();status.textContent="✅ सभी कीमतें Firebase में सेव हो गईं और ग्राहकों को अपडेट मिलेंगी।";}catch(err){console.error(err);status.textContent="सेव नहीं हुआ: "+(err.message||"Firestore Rules जाँचें");}});
+document.getElementById("adminLogoutBtn").addEventListener("click",async()=>{await signOut(auth);document.getElementById("adminEditor").style.display="none";document.getElementById("adminStatus").textContent="Logout हो गया।";});
+onAuthStateChanged(auth,user=>{if(user&&user.uid===ADMIN_UID){document.getElementById("adminEditor").style.display="block";renderPriceEditor();}});
+
+}
+loadSavedPrices();showProducts();showCart();
+</script>
+
+<!-- Offline-safe product fallback: keeps the shop usable if Firebase module fails to load. -->
+<script>
+(function(){
+  const box=document.getElementById('products');
+  if(!box) return;
+  const fallbackItems=[
+    ['चावल (साधारण)','अनाज','🌾','1 kg',60],['आटा','आटा व बेसन','🌾','1 kg',40],['चीनी','चीनी व गुड़','🍬','1 kg',45],
+    ['सरसों तेल','तेल व घी','🛢️','1 L',140],['अरहर दाल','दालें','🫘','1 kg',110],['नमक','नमक व मसाले','🧂','1 kg',20],
+    ['चायपत्ती','चाय व कॉफी','🍵','250 g',90],['बिस्कुट (ग्लूकोज़)','बिस्कुट व कुकीज़','🍪','पैक',10],
+    ['नहाने का साबुन','साबुन व पर्सनल केयर','🧼','पीस',35],['इंस्टेंट नूडल्स','नूडल्स व रेडी फूड','🍜','पैक',15],
+    ['मैदा','आटा व बेसन','🌾','1 kg',45],['चना दाल','दालें','🫘','1 kg',80],['मसूर दाल','दालें','🫘','1 kg',90],
+    ['रिफाइंड तेल','तेल व घी','🛢️','1 L',130],['हल्दी पाउडर','नमक व मसाले','🧂','100 g',25],
+    ['कपड़े धोने का साबुन','साबुन व पर्सनल केयर','🧼','पीस',20],['डिटर्जेंट पाउडर','कपड़े व घर की सफाई','🧺','500 g',40],
+    ['आलू चिप्स','नमकीन व स्नैक्स','🍟','पैक',10],['टॉफी','टॉफी व चॉकलेट','🍬','पीस',1],['माचिस','घरेलू उपयोग','🔥','डिब्बी',2]
+  ];
+  const cart=new Map();
+  function render(){
+    // If the Firebase module succeeded, leave its full catalog and handlers alone.
+    if(box.children.length && box.textContent.trim()) return;
+    const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
+    const cat=document.getElementById('category')?.value||'';
+    const list=fallbackItems.filter(x=>(!q||(x[0]+' '+x[1]).toLowerCase().includes(q))&&(!cat||x[1]===cat));
+    const count=document.getElementById('count'); if(count) count.textContent=list.length+' सामान';
+    box.innerHTML=list.map((x,i)=>`<div class="card"><div class="emoji">${x[2]}</div><div class="category">${x[1]}</div><h3>${x[0]}</h3><div class="pack">📦 ${x[3]}</div><div class="price">₹${x[4]}</div><button type="button" data-add="${fallbackItems.indexOf(x)}">+ कार्ट में जोड़ें</button></div>`).join('')||'<p>कोई सामान नहीं मिला।</p>';
+  }
+  function renderCart(){
+    const el=document.getElementById('cart'), totalEl=document.getElementById('total'); if(!el||!totalEl)return;
+    if(!cart.size){el.textContent='अभी कार्ट खाली है।';totalEl.textContent='कुल: ₹0';return;}
+    let total=0;el.innerHTML='';
+    cart.forEach((qty,i)=>{const x=fallbackItems[i],sub=x[4]*qty;total+=sub;el.innerHTML+=`<div class="cartrow"><div><b>${x[0]}</b><br>₹${x[4]} × ${qty}<br><strong>₹${sub}</strong></div><div><button type="button" data-minus="${i}">−</button> ${qty} <button type="button" data-plus="${i}">+</button><br><button type="button" data-remove="${i}" style="background:#a52828;margin-top:5px">हटाएँ</button></div></div>`;});
+    totalEl.textContent='कुल: ₹'+total;
+  }
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    if(b.dataset.add!==undefined){const i=Number(b.dataset.add);cart.set(i,(cart.get(i)||0)+1);renderCart();}
+    if(b.dataset.plus!==undefined){const i=Number(b.dataset.plus);cart.set(i,(cart.get(i)||0)+1);renderCart();}
+    if(b.dataset.minus!==undefined){const i=Number(b.dataset.minus);const n=(cart.get(i)||0)-1;if(n>0)cart.set(i,n);else cart.delete(i);renderCart();}
+    if(b.dataset.remove!==undefined){cart.delete(Number(b.dataset.remove));renderCart();}
+    if(b.id==='clearCartBtn'){cart.clear();renderCart();}
+  });
+  document.getElementById('search')?.addEventListener('input',render);
+  document.getElementById('category')?.addEventListener('change',render);
+  // Fill category options for fallback mode only.
+  function setupCategories(){const sel=document.getElementById('category');if(!sel)return; if(sel.options.length<=1){[...new Set(fallbackItems.map(x=>x[1]))].forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});}}
+  // If the module never rendered products, show a small working starter catalog.
+  setTimeout(()=>{if(!box.children.length||!box.textContent.trim()){setupCategories();render();}},1200);
+  // Fallback order sends cart details to the store's WhatsApp number.
+  document.getElementById('orderForm')?.addEventListener('submit',e=>{
+    if(!cart.size)return; e.preventDefault();
+    const name=document.getElementById('customerName').value.trim(), mobile=document.getElementById('mobile').value.trim(), address=document.getElementById('address').value.trim();
+    if(!/^[0-9]{10}$/.test(mobile)){alert('10 अंकों का सही मोबाइल नंबर भरें।');return;}
+    let total=0;const lines=[];cart.forEach((qty,i)=>{const x=fallbackItems[i];total+=x[4]*qty;lines.push('• '+x[0]+' × '+qty+' = ₹'+(x[4]*qty));});
+    const msg='🛒 GRAM BASKET ऑर्डर\nग्राहक: '+name+'\nमोबाइल: '+mobile+'\nपता: '+address+'\n\n'+lines.join('\n')+'\n\nकुल: ₹'+total;
+    document.getElementById('message').textContent='WhatsApp खुलेगा—वहाँ Send दबाएँ।';window.location.href='https://wa.me/919919213659?text='+encodeURIComponent(msg);
+  },true);
+})();
+</script>
+
+</body>
+</html>
