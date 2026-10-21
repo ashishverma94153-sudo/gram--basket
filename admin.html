@@ -46,5 +46,19 @@ function render(){const q=$('search').value.trim().toLowerCase(),cat=$('category
 async function load(){if(!allowed())throw new Error('Admin लॉगिन जरूरी है।');$('status').textContent='Firebase से कीमतें लोड हो रही हैं…';const snap=await getDocs(collection(db,'Products'));const saved={};snap.forEach(d=>saved[String(d.id)]=d.data());products=products.map(p=>saved[String(p.id)]?{...p,...saved[String(p.id)],id:p.id}:p);categories();render();$('status').textContent='कीमतें लोड हो गईं। बदलाव करके सेव करें।';}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('status').textContent='लॉगिन हो रहा है…';try{const result=await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value);if(result.user.uid!==ADMIN_UID){await signOut(auth);throw new Error('यह खाता अधिकृत Admin नहीं है।');}$('panel').style.display='block';$('logout').style.display='inline-block';await load();}catch(e){$('status').textContent='लॉगिन/लोड विफल: '+e.message;}});
 $('saveBtn').addEventListener('click',async()=>{if(!allowed()){alert('पहले अधिकृत Admin लॉगिन करें।');return;}const btn=$('saveBtn');btn.disabled=true;$('status').textContent='कीमतें सेव हो रही हैं…';try{for(const p of products){const get=n=>Number($(n+'-'+p.id)?.value??(n==='pack'?p.packPrice:n==='packsale'?p.packSalePrice:n==='loose'?p.loosePricePerKg:p.looseSalePricePerKg));const packPrice=get('pack'),packSalePrice=get('packsale'),loosePricePerKg=p.loose?get('loose'):0,looseSalePricePerKg=p.loose?get('loosesale'):0;if(![packPrice,packSalePrice,loosePricePerKg,looseSalePricePerKg].every(n=>Number.isFinite(n)&&n>=0))throw new Error(p.name+': कीमत 0 या उससे अधिक होनी चाहिए।');if(packSalePrice>0&&packSalePrice>=packPrice)throw new Error(p.name+': पैक सेल कीमत नियमित कीमत से कम रखें या 0 करें।');if(looseSalePricePerKg>0&&looseSalePricePerKg>=loosePricePerKg)throw new Error(p.name+': खुली सेल कीमत नियमित कीमत से कम रखें या 0 करें।');await setDoc(doc(db,'Products',String(p.id)),{id:p.id,name:p.name,category:p.category,emoji:p.emoji,pack:p.pack,packPrice,packSalePrice,packKg:p.packKg,loose:p.loose,loosePricePerKg,looseSalePricePerKg,isActive:true},{merge:true});Object.assign(p,{packPrice,packSalePrice,loosePricePerKg,looseSalePricePerKg});}render();$('status').textContent='सभी कीमतें Firebase में सेव हो गईं। ग्राहक वेबसाइट को रिफ्रेश करके जाँचें।';alert('सभी कीमतें सेव हो गईं!');}catch(e){console.error(e);$('status').textContent='कीमतें सेव नहीं हुईं: '+e.message;alert('सेव नहीं हुआ: '+e.message);}finally{btn.disabled=false;}});
-$('reloadBtn').addEventListener('click',()=>load().catch(e=>$('status').textContent='लोड नहीं हुआ: '+e.message));$('search').addEventListener('input',render);$('category').addEventListener('change',render);$('logout').addEventListener('click',async()=>{await signOut(auth);$('panel').style.display='none';$('logout').style.display='none';$('status').textContent='लॉगआउट हो गया।'});onAuthStateChanged(auth,u=>{if(u&&u.uid===ADMIN_UID){$('panel').style.display='block';$('logout').style.display='inline-block';load().catch(e=>$('status').textContent='लोड नहीं हुआ: '+e.message);}});categories();render();
+$('reloadBtn').addEventListener('click',()=>load().catch(e=>$('status').textContent='लोड नहीं हुआ: '+e.message));$('search').addEventListener('input',render);$('category').addEventListener('change',render);$('logout').addEventListener('click',async()=>{await signOut(auth);$('panel').style.display='none';$('logout').style.display='none';$('status').textContent='लॉगआउट हो गया।'});onAuthStateChanged(auth, async (u) => {
+  if (u && u.uid === "gP0392TzG0Ot1P7uw65Hke8nQUL2";) {
+    $('panel').style.display = 'block';
+    $('logout').style.display = 'inline-block';
+    try {
+      await load();
+    } catch (e) {
+      $('status').textContent = 'लोड नहीं हुआ: ' + e.message;
+      console.error(e);
+    }
+  } else {
+    $('panel').style.display = 'none';
+    $('logout').style.display = 'none';
+  }
+});});categories();render();
 </script></body></html>
