@@ -45,7 +45,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
@@ -133,10 +133,63 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  }catch(error){console.error(error);msg.textContent="ऑर्डर सेव नहीं हुआ। Firebase Rules/इंटरनेट जाँचें।";alert("ऑर्डर Firebase में सेव नहीं हुआ।");}
 });
 
-async function loadSavedPrices(){
- try{const snap=await getDocs(collection(db,"Products"));if(!snap.empty){const saved={};snap.forEach(d=>saved[String(d.id)]=d.data());products=products.map(p=>saved[String(p.id)]?{...p,...saved[String(p.id)]}:p);showProducts();showCart();}}
- catch(e){console.warn("Products collection not readable yet; using example prices",e);}
-}
+const defaultProducts = products.map(p => ({...p}));
+const defaultProductIds = new Set(defaultProducts.map(p => String(p.id)));
+
+function loadSavedPrices() {
+  onSnapshot(collection(db, "Products"), snap => {
+    const saved = new Map();
+
+    snap.forEach(d => {
+      saved.set(String(d.id), {
+        ...d.data(),
+        id: String(d.id)
+      });
+    });
+
+    // पुराने 107 सामानों की कीमत अपडेट
+    products = defaultProducts.map(p => {
+      const data = saved.get(String(p.id));
+      return data ? {...p, ...data, id:p.id} : {...p};
+    }).filter(p => p.isActive !== false);
+
+    // Admin से जोड़े गए नए सामान भी दिखाएँ
+    snap.forEach(d => {
+      if (!defaultProductIds.has(String(d.id))) {
+        const data = d.data();
+
+        if (data.isActive !== false) {
+          products.push({
+            ...data,
+            id: String(d.id)
+          });
+        }
+      }
+    });
+
+    // नई कैटेगरी भी जोड़ें
+    const categorySelect = document.getElementById("category");
+    const selectedCategory = categorySelect.value;
+    const categories = [...new Set(products.map(p => p.category))];
+
+    categorySelect.innerHTML =
+      '<option value="">सभी कैटेगरी</option>' +
+      categories.map(c => `<option value="${c}">${c}</option>`).join("");
+
+    if (categories.includes(selectedCategory)) {
+      categorySelect.value = selectedCategory;
+    }
+
+    showProducts();
+    showCart();
+
+    console.log("GRAM BASKET: Firebase कीमतें अपडेट हुईं");
+  }, error => {
+    console.error("Firebase Products Error:", error);
+    document.getElementById("count").textContent =
+      "कीमतें लोड नहीं हुईं: " + error.message;
+  });
+                                    }
 function renderPriceEditor(){document.getElementById("priceRows").innerHTML=products.map(p=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px;min-width:120px">${p.emoji} ${p.name}</td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="pack-${p.id}" value="${p.packPrice}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="packsale-${p.id}" value="${p.packSalePrice||0}"></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loose-${p.id}" value="${p.loosePricePerKg||0}" ${p.loose?'':'disabled'}></td><td><input style="min-width:85px" type="number" min="0" step="0.01" id="loosesale-${p.id}" value="${p.looseSalePricePerKg||0}" ${p.loose?'':'disabled'}></td></tr>`).join("");}
 // Admin controls are optional on the customer page. Do not stop product rendering if they are absent.
 if (document.getElementById("adminLoginForm") && document.getElementById("savePricesBtn") && document.getElementById("adminLogoutBtn")) {
