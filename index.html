@@ -22,16 +22,26 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <div class="notice">📌 कीमतें अभी उदाहरण हैं। बिक्री शुरू करने से पहले नीचे कोड में अपने सही दाम भरें। अनाज/दालों में खुला सामान 250 ग्राम से, 250 ग्राम के अंतर में चुनें।</div>
 <div class="tools">
 
-<div style="display:flex;gap:8px;align-items:center;width:100%">
-  <input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()" style="flex:1;min-width:0">
-  <button type="button" id="voiceOrderBtn" style="width:52px;min-width:52px;padding:12px 5px;font-size:20px">🎙️</button>
-</div>
 
+<div style="position:relative;width:100%;display:flex;align-items:center">
+  <input id="search" type="search"
+    placeholder="🔍 सामान या ब्रांड खोजें…"
+    oninput="showProducts()"
+    style="width:100%;padding:13px 55px 13px 12px;border:1px solid #ccc;border-radius:10px">
+  <button type="button" id="voiceOrderBtn"
+    aria-label="बोलकर सामान खोजें"
+    style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:50%;background:#16753b;color:white;font-size:21px;display:flex;align-items:center;justify-content:center">
+    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="2" width="6" height="13" rx="3"></rect>
+      <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"></path>
+    </svg>
+  </button>
+</div>
 <p id="voiceStatus" style="font-size:12px;margin:5px 0"></p>
 <div id="voicePreview"></div>
 <button type="button" id="confirmVoiceOrderBtn" style="display:none;width:100%;margin:8px 0">सूची सही है — कार्ट में जोड़ें</button>
-
 <select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
+  
   
 </div>
   
