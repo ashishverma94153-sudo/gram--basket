@@ -133,7 +133,15 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  createdAt:serverTimestamp(),
  source:"website"
  });
- const orderId = orderRef.id;await setDoc(doc(db,"OrderTracking",orderId),{
+ const orderId = orderRef.id;try {
+  await setDoc(doc(db,"OrderTracking",orderId),{
+    status:"नया",
+    createdAt:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  });
+} catch(trackingError) {
+  alert("Tracking Error: " + trackingError.code + " - " + trackingError.message);
+ }
   status:"नया",
   createdAt:serverTimestamp(),
   updatedAt:serverTimestamp()
