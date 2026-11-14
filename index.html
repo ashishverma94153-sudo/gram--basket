@@ -153,16 +153,16 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  createdAt:serverTimestamp(),
  source:"website"
  });
- const orderId = orderRef.id;try {
+ const orderId = orderRef.id;
+
+try {
   await setDoc(doc(db,"OrderTracking",orderId),{
     status:"नया",
     createdAt:serverTimestamp(),
     updatedAt:serverTimestamp()
   });
-} 
-  status:"नया",
-  createdAt:serverTimestamp(),
-  updatedAt:serverTimestamp()
+} catch(trackingError) {
+  console.error("Tracking Error:", trackingError);
 });
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
  const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर
@@ -178,7 +178,29 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  }
 });
 
-const defaultProducts = products.map(p => ({...p}));
+document.getElementById("trackOrderBtn").addEventListener("click", async () => {
+  const id = document.getElementById("trackingOrderId").value.trim();
+  const result = document.getElementById("trackingResult");
+
+  if (!id) {
+    result.textContent = "कृपया Order ID डालें।";
+    return;
+  }
+
+  result.textContent = "ऑर्डर खोजा जा रहा है...";
+
+  try {
+    const snap = await getDoc(doc(db, "OrderTracking", id));
+
+    if (snap.exists()) {
+      result.textContent = "आपके ऑर्डर की स्थिति: " + snap.data().status;
+    } else {
+      result.textContent = "यह Order ID नहीं मिली। कृपया सही ID डालें।";
+    }
+  } catch (error) {
+    result.textContent = "त्रुटि: " + error.message;
+  }
+});const defaultProducts = products.map(p => ({...p}));
 const defaultProductIds = new Set(defaultProducts.map(p => String(p.id)));
 
 function loadSavedPrices() {
