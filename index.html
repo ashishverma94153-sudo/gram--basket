@@ -141,7 +141,11 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
 
 👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
  msg.textContent="ऑर्डर सफलतापूर्वक सेव हो गया! आपकी Order ID है: "+orderId+" । इसे संभालकर रखें। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
- }catch(error){console.error(error);msg.textContent="ऑर्डर सेव नहीं हुआ। Firebase Rules/इंटरनेट जाँचें।";alert("ऑर्डर Firebase में सेव नहीं हुआ।");}
+ }catch(error){
+ console.error(error);
+ msg.textContent="Error: "+error.message;
+ alert("Error: "+error.message);
+ }
 });
 
 const defaultProducts = products.map(p => ({...p}));
