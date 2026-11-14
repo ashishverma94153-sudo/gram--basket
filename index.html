@@ -34,7 +34,27 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <input id="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" required>
 <textarea id="address" placeholder="गाँव, पोस्ट, जिला और पूरा पता" required></textarea>
 <button class="order-button" type="submit">ऑर्डर WhatsApp पर भेजें</button>
-</form><p id="message" role="status"></p>
+</form><section id="orderTracking" style="background:white;padding:18px;margin:15px;border-radius:12px;">
+  <h2>📦 अपना ऑर्डर ट्रैक करें</h2>
+  <p>अपनी Order ID डालकर ऑर्डर की स्थिति जानें।</p>
+
+  <input
+    type="text"
+    id="trackingOrderId"
+    placeholder="अपनी Order ID यहाँ डालें"
+    style="width:100%;padding:12px;margin:10px 0;"
+  >
+
+  <button
+    type="button"
+    id="trackOrderBtn"
+    style="background:#16753b;color:white;padding:12px;border:0;border-radius:8px;width:100%;"
+  >
+    ऑर्डर ट्रैक करें
+  </button>
+
+  <div id="trackingResult" style="margin-top:15px;"></div>
+</section><p id="message" role="status"></p>
 </section>
 <section id="adminPriceSection" style="border:2px solid #16753b">
 <h2>🔐 Admin: सामान की कीमत बदलें</h2>
