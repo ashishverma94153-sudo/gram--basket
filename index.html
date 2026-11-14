@@ -128,8 +128,12 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  const msg=document.getElementById("message");msg.textContent="ऑर्डर Firebase में सेव हो रहा है…";
  try{await addDoc(collection(db,"Orders"),{customerName,mobile,address,items:orderItems,total,status:"नया",createdAt:serverTimestamp(),source:"website"});
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
- const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर\n\n👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
- msg.textContent="ऑर्डर सेव हो गया। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
+ const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर
+
+🆔 Order ID: ${orderId}
+
+👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
+ msg.textContent="ऑर्डर सफलतापूर्वक सेव हो गया! आपकी Order ID है: "+orderId+" । इसे संभालकर रखें। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
  }catch(error){console.error(error);msg.textContent="ऑर्डर सेव नहीं हुआ। Firebase Rules/इंटरनेट जाँचें।";alert("ऑर्डर Firebase में सेव नहीं हुआ।");}
 });
 
