@@ -126,7 +126,14 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  const total=Math.round(rows.reduce((sum,r)=>sum+lineTotal(r),0)*100)/100;
  const orderItems=rows.map(r=>({name:r.p.name,category:r.p.category,pack:r.p.pack,mode:r.mode,unit:r.mode==='loose'?'kg':'pack',price:activePrice(r.p,r.mode),regularPrice:r.mode==='loose'?r.p.loosePricePerKg:r.p.packPrice,quantity:r.qty,lineTotal:lineTotal(r)}));
  const msg=document.getElementById("message");msg.textContent="ऑर्डर Firebase में सेव हो रहा है…";
- try{await addDoc(collection(db,"Orders"),{customerName,mobile,address,items:orderItems,total,status:"नया",createdAt:serverTimestamp(),source:"website"});
+ try{
+ const orderRef = await addDoc(collection(db,"Orders"),{
+ customerName,mobile,address,items:orderItems,total,
+ status:"नया",
+ createdAt:serverTimestamp(),
+ source:"website"
+ });
+ const orderId = orderRef.id;
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
  const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर
 
