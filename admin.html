@@ -1,13 +1,505 @@
-<!DOCTYPE html><html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GRAM BASKET Admin</title><style>*{box-sizing:border-box}body{font-family:Arial;background:#f3f7f2;margin:0;color:#222}header{background:#16753b;color:white;text-align:center;padding:18px}main{max-width:800px;margin:auto;padding:12px}section{background:white;border-radius:10px;padding:14px;margin:12px 0}input{width:100%;padding:11px;margin:6px 0;border:1px solid #bbb;border-radius:7px}button{padding:10px 12px;background:#16753b;color:white;border:0;border-radius:7px;margin:4px 0}button.delete{background:#a52828}.row{border-bottom:1px solid #ddd;padding:12px 0}#panel{display:none}</style></head><body><header><h1>🔐 GRAM BASKET Admin</h1><p>Product Management</p></header><main><section><h2>Admin Login</h2><p style="color:red;font-weight:bold">TEST: नया Admin पेज खुला</p><form id="login"><input id="email" type="email" placeholder="Admin email" required><input id="password" type="password" placeholder="Admin password" required><button>Login</button></form><p id="status"></p><button id="logout" style="display:none;background:#555">Logout</button></section><div id="panel"><section><h2>➕ नया सामान जोड़ें</h2><input id="name" placeholder="सामान का नाम"><input id="category" placeholder="कैटेगरी"><input id="emoji" placeholder="इमोजी" value="🛒"><input id="pack" placeholder="पैक / मात्रा"><input id="price" type="number" min="0.01" step="0.01" placeholder="कीमत ₹"><button id="add">सामान जोड़ें</button></section><section><h2>🛠️ सामान बदलें / हटाएँ</h2><div id="list"></div></section></div></main><script type="module">import{initializeApp}from"https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";import{getFirestore,collection,getDocs,doc,setDoc}from"https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";const app=initializeApp({apiKey:"AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",authDomain:"gram-basket.firebaseapp.com",projectId:"gram-basket",storageBucket:"gram-basket.firebasestorage.app",messagingSenderId:"334817273306",appId:"1:334817273306:web:7876254dcc3a83801e8ce3"});const db=getFirestore(app),auth=getAuth(app),ADMIN_UID="gP0392TzG0Ot1P7uw65Hke8nQUL2";let rows=[];const $=id=>document.getElementById(id);function allowed(){return auth.currentUser&&auth.currentUser.uid===ADMIN_UID}async function load(){const s=await getDocs(collection(db,"Products"));rows=s.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.isActive!==false);render()}function render(){$("list").innerHTML=rows.map(p=>`<div class="row"><b>${p.emoji||"🛒"} ${p.name}</b><input id="n-${p.id}" value="${String(p.name||"").replace(/&/g,"&amp;").replace(/\"/g,"&quot;")}" placeholder="नाम"><input id="c-${p.id}" value="${String(p.category||"").replace(/&/g,"&amp;").replace(/\"/g,"&quot;")}" placeholder="कैटेगरी"><input id="e-${p.id}" value="${p.emoji||"🛒"}" placeholder="इमोजी"><input id="k-${p.id}" value="${String(p.pack||"").replace(/&/g,"&amp;").replace(/\"/g,"&quot;")}" placeholder="पैक"><input id="p-${p.id}" type="number" min="0" step="0.01" value="${p.packPrice||0}" placeholder="कीमत"><button onclick="window.save('${p.id}')">बदलाव सेव करें</button><button class="delete" onclick="window.removeP('${p.id}')">हटाएँ</button></div>`).join("")||"कोई सामान नहीं मिला।"}window.save=async id=>{if(!allowed())return;const p=rows.find(x=>x.id===id);const v={...p,name:$(`n-${id}`).value.trim(),category:$(`c-${id}`).value.trim(),emoji:$(`e-${id}`).value.trim()||"🛒",pack:$(`k-${id}`).value.trim(),packPrice:Number($(`p-${id}`).value),isActive:true};if(!v.name||!v.category||!v.pack||!Number.isFinite(v.packPrice)||v.packPrice<0){alert("सही जानकारी भरें");return}try{await setDoc(doc(db,"Products",id),v);await load();$("status").textContent="सामान अपडेट हो गया।"}catch(e){alert("सेव नहीं हुआ: "+e.message)}};window.removeP=async id=>{if(!allowed()||!confirm("सामान वेबसाइट से हटाएँ?"))return;try{const p=rows.find(x=>x.id===id);await setDoc(doc(db,"Products",id),{...p,isActive:false});await load();$("status").textContent="सामान छिपा दिया गया।"}catch(e){alert("हटाया नहीं गया: "+e.message)}};$("login").addEventListener("click",()=> {
-  $("login").addEventListener("click",()=> {
-  $("status").textContent = "Login बटन काम कर रहा है";
-});
-});$("login").addEventListener("submit",async e=>{e.preventDefault();$("status").textContent = "Firebase Login शुरू हो रहा है...";try{const c=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);if(c.user.uid!==ADMIN_UID){await signOut(auth);throw Error("यह खाता अधिकृत Admin नहीं है")};$("status").textContent="लॉगिन सफल";$("panel").style.display="block";$("logout").style.display="inline-block";await load()}catch(e){$("status").textContent="लॉगिन विफल: "+e.message}});$("logout").onclick=async()=>{await signOut(auth);$("panel").style.display="none";$("logout").style.display="none"};onAuthStateChanged(auth,u=>{if(u&&u.uid===ADMIN_UID){$("panel").style.display="block";$("logout").style.display="inline-block";load().catch(e=>$("status").textContent="डेटा लोड नहीं हुआ: "+e.message)}});$("add").onclick=async()=>{if(!allowed())return;const name=$("name").value.trim(),category=$("category").value.trim(),emoji=$("emoji").value.trim()||"🛒",pack=$("pack").value.trim(),packPrice=Number($("price").value);if(!name||!category||!pack||!Number.isFinite(packPrice)||packPrice<=0){alert("नाम, कैटेगरी, पैक और सही कीमत भरें");return}const id="custom_"+Date.now(),p={id,name,category,emoji,pack,packPrice,packSalePrice:0,packKg:0,loose:false,loosePricePerKg:0,looseSalePricePerKg:0,isActive:true};try{await setDoc(doc(db,"Products",id),p);["name","category","pack","price"].forEach(x=>$(x).value="");await load();$("status").textContent="नया सामान सेव हो गया। ग्राहक वेबसाइट में दिखने के लिए index.html का अपडेटेड वर्ज़न भी लगाएँ।"}catch(e){alert("सामान सेव नहीं हुआ: "+e.message)}};window.addEventListener("error", function(e) {
-  document.getElementById("status").textContent =
-    "JavaScript Error: " + e.message;
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GRAM BASKET Admin</title>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f3f7f2;margin:0;color:#222}
+header{background:#16753b;color:white;text-align:center;padding:18px}
+main{max-width:850px;margin:auto;padding:12px}
+section{background:white;border-radius:10px;padding:14px;margin:12px 0}
+input,select{width:100%;padding:11px;margin:6px 0;border:1px solid #bbb;border-radius:7px;font-size:15px}
+button{padding:10px 12px;background:#16753b;color:white;border:0;border-radius:7px;margin:4px 0;cursor:pointer}
+button.delete{background:#a52828}
+button.secondary{background:#555}
+.row{border-bottom:1px solid #ddd;padding:12px 0;overflow-wrap:anywhere}
+#panel{display:none}
+.order-card{border:1px solid #ddd;border-radius:9px;padding:12px;margin:12px 0;background:#fff}
+.order-id{font-size:13px;overflow-wrap:anywhere;color:#555}
+.status-label{font-weight:bold;color:#16753b}
+.small{font-size:13px;color:#666}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🔐 GRAM BASKET Admin</h1>
+<p>दुकान और ऑर्डर मैनेजमेंट</p>
+</header>
+
+<main>
+
+<section>
+<h2>Admin Login</h2>
+
+<form id="login">
+<input id="email" type="email" placeholder="Admin email" required>
+<input id="password" type="password" placeholder="Admin password" required>
+<button type="submit">Login</button>
+</form>
+
+<p id="status"></p>
+<button id="logout" class="secondary" style="display:none">Logout</button>
+</section>
+
+<div id="panel">
+
+<section>
+<h2>📦 ऑर्डर मैनेजमेंट</h2>
+<p class="small">ग्राहकों के ऑर्डर देखें और उनकी स्थिति बदलें।</p>
+<button id="refreshOrders" type="button">ऑर्डर रिफ्रेश करें</button>
+<div id="ordersList">ऑर्डर लोड हो रहे हैं...</div>
+</section>
+
+<section>
+<h2>➕ नया सामान जोड़ें</h2>
+
+<input id="name" placeholder="सामान का नाम">
+<input id="category" placeholder="कैटेगरी">
+<input id="emoji" placeholder="इमोजी" value="🛒">
+<input id="pack" placeholder="पैक / मात्रा">
+<input id="price" type="number" min="0.01" step="0.01" placeholder="कीमत ₹">
+
+<button id="add" type="button">सामान जोड़ें</button>
+</section>
+
+<section>
+<h2>🛠️ सामान बदलें / हटाएँ</h2>
+<div id="list">सामान लोड हो रहा है...</div>
+</section>
+
+</div>
+</main>
+
+<script type="module">
+
+import {
+ initializeApp
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+import {
+ getFirestore,
+ collection,
+ getDocs,
+ doc,
+ setDoc,
+ updateDoc,
+ serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import {
+ getAuth,
+ signInWithEmailAndPassword,
+ signOut,
+ onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+
+const app = initializeApp({
+ apiKey:"AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
+ authDomain:"gram-basket.firebaseapp.com",
+ projectId:"gram-basket",
+ storageBucket:"gram-basket.firebasestorage.app",
+ messagingSenderId:"334817273306",
+ appId:"1:334817273306:web:7876254dcc3a83801e8ce3"
 });
 
-window.addEventListener("unhandledrejection", function(e) {
-  document.getElementById("status").textContent =
-    "Firebase Error: " + (e.reason?.message || e.reason);
-});</script></body></html>
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const ADMIN_UID = "gP0392TzG0Ot1P7uw65Hke8nQUL2";
+
+let rows = [];
+
+const $ = id => document.getElementById(id);
+
+function allowed(){
+ return auth.currentUser &&
+        auth.currentUser.uid === ADMIN_UID;
+}
+
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g, ch => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ })[ch]);
+}
+
+
+// ---------------- LOGIN ----------------
+
+$("login").addEventListener("submit",async e=>{
+ e.preventDefault();
+
+ $("status").textContent="लॉगिन हो रहा है...";
+
+ try{
+  const credential = await signInWithEmailAndPassword(
+   auth,
+   $("email").value.trim(),
+   $("password").value
+  );
+
+  if(credential.user.uid !== ADMIN_UID){
+   await signOut(auth);
+   throw new Error("यह खाता अधिकृत Admin नहीं है।");
+  }
+
+  $("status").textContent="लॉगिन सफल।";
+
+ }catch(e){
+  $("status").textContent="लॉगिन विफल: "+e.message;
+ }
+});
+
+
+$("logout").addEventListener("click",async()=>{
+ await signOut(auth);
+ $("panel").style.display="none";
+ $("logout").style.display="none";
+ $("status").textContent="Logout हो गया।";
+});
+
+
+// ---------------- AUTH STATE ----------------
+
+onAuthStateChanged(auth,async user=>{
+
+ if(user && user.uid===ADMIN_UID){
+
+  $("panel").style.display="block";
+  $("logout").style.display="inline-block";
+
+  $("status").textContent="Admin लॉगिन सफल।";
+
+  try{
+   await loadProducts();
+   await loadOrders();
+  }catch(e){
+   $("status").textContent="डेटा लोड नहीं हुआ: "+e.message;
+  }
+
+ }else{
+
+  $("panel").style.display="none";
+  $("logout").style.display="none";
+
+ }
+});
+
+
+// ---------------- PRODUCTS ----------------
+
+async function loadProducts(){
+
+ if(!allowed()) return;
+
+ const snap=await getDocs(collection(db,"Products"));
+
+ rows=snap.docs.map(d=>({
+  ...d.data(),
+  id:d.id
+ })).filter(p=>p.isActive!==false);
+
+ renderProducts();
+}
+
+
+function renderProducts(){
+
+ $("list").innerHTML=rows.map(p=>`
+
+ <div class="row">
+
+ <b>${escapeHTML(p.emoji||"🛒")} ${escapeHTML(p.name)}</b>
+
+ <input id="n-${p.id}" value="${escapeHTML(p.name||"")}" placeholder="नाम">
+
+ <input id="c-${p.id}" value="${escapeHTML(p.category||"")}" placeholder="कैटेगरी">
+
+ <input id="e-${p.id}" value="${escapeHTML(p.emoji||"🛒")}" placeholder="इमोजी">
+
+ <input id="k-${p.id}" value="${escapeHTML(p.pack||"")}" placeholder="पैक">
+
+ <input id="p-${p.id}" type="number" min="0" step="0.01" value="${Number(p.packPrice)||0}" placeholder="कीमत">
+
+ <button onclick="window.saveProduct('${p.id}')">बदलाव सेव करें</button>
+
+ <button class="delete" onclick="window.removeProduct('${p.id}')">हटाएँ</button>
+
+ </div>
+
+ `).join("") || "कोई सामान नहीं मिला।";
+}
+
+
+window.saveProduct=async id=>{
+
+ if(!allowed()) return;
+
+ const p=rows.find(x=>x.id===id);
+
+ if(!p) return;
+
+ const v={
+  ...p,
+  name:$(`n-${id}`).value.trim(),
+  category:$(`c-${id}`).value.trim(),
+  emoji:$(`e-${id}`).value.trim()||"🛒",
+  pack:$(`k-${id}`).value.trim(),
+  packPrice:Number($(`p-${id}`).value),
+  isActive:true
+ };
+
+ if(!v.name || !v.category || !v.pack ||
+    !Number.isFinite(v.packPrice) || v.packPrice<0){
+
+  alert("सही जानकारी भरें।");
+  return;
+ }
+
+ try{
+
+  await setDoc(doc(db,"Products",id),v);
+
+  await loadProducts();
+
+  $("status").textContent="सामान अपडेट हो गया।";
+
+ }catch(e){
+
+  alert("सेव नहीं हुआ: "+e.message);
+
+ }
+};
+
+
+window.removeProduct=async id=>{
+
+ if(!allowed()) return;
+
+ if(!confirm("क्या यह सामान वेबसाइट से हटाना चाहते हैं?")) return;
+
+ try{
+
+  const p=rows.find(x=>x.id===id);
+
+  if(!p) return;
+
+  await setDoc(doc(db,"Products",id),{
+   ...p,
+   isActive:false
+  });
+
+  await loadProducts();
+
+  $("status").textContent="सामान छिपा दिया गया।";
+
+ }catch(e){
+
+  alert("हटाया नहीं गया: "+e.message);
+
+ }
+};
+
+
+$("add").addEventListener("click",async()=>{
+
+ if(!allowed()) return;
+
+ const name=$("name").value.trim();
+ const category=$("category").value.trim();
+ const emoji=$("emoji").value.trim()||"🛒";
+ const pack=$("pack").value.trim();
+ const packPrice=Number($("price").value);
+
+ if(!name || !category || !pack ||
+    !Number.isFinite(packPrice) || packPrice<=0){
+
+  alert("नाम, कैटेगरी, पैक और सही कीमत भरें।");
+  return;
+ }
+
+ const id="custom_"+Date.now();
+
+ const p={
+  id,
+  name,
+  category,
+  emoji,
+  pack,
+  packPrice,
+  packSalePrice:0,
+  packKg:0,
+  loose:false,
+  loosePricePerKg:0,
+  looseSalePricePerKg:0,
+  isActive:true
+ };
+
+ try{
+
+  await setDoc(doc(db,"Products",id),p);
+
+  ["name","category","pack","price"].forEach(x=>{
+   $(x).value="";
+  });
+
+  $("emoji").value="🛒";
+
+  await loadProducts();
+
+  $("status").textContent="नया सामान सेव हो गया।";
+
+ }catch(e){
+
+  alert("सामान सेव नहीं हुआ: "+e.message);
+
+ }
+});
+
+
+// ---------------- ORDER MANAGEMENT ----------------
+
+const orderStatuses=[
+ "नया",
+ "कन्फर्म",
+ "तैयार हो रहा है",
+ "डिलीवरी के लिए निकला",
+ "पूरा हुआ",
+ "रद्द"
+];
+
+
+async function loadOrders(){
+
+ if(!allowed()) return;
+
+ $("ordersList").textContent="ऑर्डर लोड हो रहे हैं...";
+
+ try{
+
+  const snap=await getDocs(collection(db,"Orders"));
+
+  const orders=snap.docs.map(d=>({
+   id:d.id,
+   ...d.data()
+  }));
+
+  orders.sort((a,b)=>{
+   const ta=a.createdAt?.toMillis?.()||0;
+   const tb=b.createdAt?.toMillis?.()||0;
+   return tb-ta;
+  });
+
+  $("ordersList").innerHTML=orders.map(o=>`
+
+   <div class="order-card">
+
+    <b>🛒 ग्राहक: ${escapeHTML(o.customerName||"")}</b>
+
+    <p class="order-id">
+     Order ID: ${escapeHTML(o.id)}
+    </p>
+
+    <p>📱 मोबाइल: ${escapeHTML(o.mobile||"")}</p>
+
+    <p>📍 पता: ${escapeHTML(o.address||"")}</p>
+
+    <p>💰 कुल: ₹${Number(o.total||0).toFixed(2)}</p>
+
+    <p class="status-label">
+     वर्तमान स्थिति: ${escapeHTML(o.status||"नया")}
+    </p>
+
+    <label>नई स्थिति चुनें:</label>
+
+    <select id="orderStatus-${o.id}">
+     ${orderStatuses.map(s=>`
+      <option value="${s}" ${s===(o.status||"नया")?"selected":""}>
+       ${s}
+      </option>
+     `).join("")}
+    </select>
+
+    <button onclick="window.changeOrderStatus('${o.id}')">
+     Status सेव करें
+    </button>
+
+   </div>
+
+  `).join("") || "अभी कोई ऑर्डर नहीं है।";
+
+ }catch(e){
+
+  $("ordersList").textContent="ऑर्डर लोड नहीं हुए: "+e.message;
+
+ }
+}
+
+
+window.changeOrderStatus=async id=>{
+
+ if(!allowed()){
+  alert("पहले Admin Login करें।");
+  return;
+ }
+
+ const select=$("orderStatus-"+id);
+
+ if(!select) return;
+
+ const newStatus=select.value;
+
+ if(!orderStatuses.includes(newStatus)){
+  alert("गलत Status चुना गया है।");
+  return;
+ }
+
+ try{
+
+  // पहले ग्राहक की Tracking अपडेट होगी।
+  await updateDoc(doc(db,"OrderTracking",id),{
+   status:newStatus,
+   updatedAt:serverTimestamp()
+  });
+
+  // फिर Admin के Orders में Status अपडेट होगा।
+  await updateDoc(doc(db,"Orders",id),{
+   status:newStatus
+  });
+
+  alert("ऑर्डर का Status सफलतापूर्वक बदल गया!");
+
+  await loadOrders();
+
+ }catch(e){
+
+  alert("Status अपडेट नहीं हुआ: "+e.code+" — "+e.message);
+
+ }
+
+};
+
+
+$("refreshOrders").addEventListener("click",loadOrders);
+
+
+window.addEventListener("error",e=>{
+ $("status").textContent="JavaScript Error: "+e.message;
+});
+
+window.addEventListener("unhandledrejection",e=>{
+ $("status").textContent="Firebase Error: "+(e.reason?.message||e.reason);
+});
+
+</script>
+</body>
+</html>
