@@ -24,7 +24,16 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()">
 <select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
 </div>
-<h2>🛍️ किराना सामान</h2>
+
+<section id="voiceOrderSection" style="margin:14px 12px;padding:16px;background:white;border-radius:10px;border:1px solid #16753b">
+  <h2 style="padding:0;margin-top:0">🎙️ बोलकर किराना ऑर्डर</h2>
+  <p>माइक दबाकर हिंदी में सामान और उसकी मात्रा बोलें।</p>
+  <button type="button" id="voiceOrderBtn" style="width:100%;padding:14px;font-size:16px">🎙️ बोलकर बोलें</button>
+  <p id="voiceStatus" role="status">उदाहरण: दो किलो चावल और आधा किलो अरहर दाल।</p>
+  <div id="voicePreview"></div>
+  <button type="button" id="confirmVoiceOrderBtn" style="display:none;width:100%;margin-top:10px">सूची सही है — कार्ट में जोड़ें</button>
+</section>
+  <h2>🛍️ किराना सामान</h2>
 <div id="count" style="padding:0 12px;color:#666"></div>
 <div id="products" class="products"></div>
 <section><h2>🛒 आपका कार्ट</h2><div id="cart">अभी कार्ट खाली है।</div><h3 id="total">कुल: ₹0</h3><button type="button" id="clearCartBtn" style="background:#a52828">कार्ट खाली करें</button></section>
@@ -76,7 +85,7 @@ const rawProducts = [
 ["टॉफी","टॉफी व चॉकलेट","🍬","डिस्प्ले बॉक्स",300],["लॉलीपॉप","टॉफी व चॉकलेट","🍭","डिस्प्ले बॉक्स",250],["चॉकलेट","टॉफी व चॉकलेट","🍫","डिस्प्ले कार्टन",900],["च्यूइंग गम","टॉफी व चॉकलेट","🍬","डिस्प्ले बॉक्स",250],
 ["कोल्ड ड्रिंक","पेय पदार्थ","🥤","पूरी क्रेट",700],["पैक्ड पानी","पेय पदार्थ","💧","1 L × 12 बोतल कार्टन",180],["फ्रूट ड्रिंक","पेय पदार्थ","🧃","छोटा कार्टन",500],["एनर्जी ड्रिंक","पेय पदार्थ","🥤","पूरा कार्टन",900],
 ["टमाटर सॉस","सॉस व पैक्ड फूड","🍅","1 kg × 12 बोतल कार्टन",1200],["सोया सॉस","सॉस व पैक्ड फूड","🥫","कार्टन",900],["अचार","सॉस व पैक्ड फूड","🥭","1 kg × 12 जार कार्टन",1500],["जैम","सॉस व पैक्ड फूड","🍓","कार्टन",1100],["पीनट बटर","सॉस व पैक्ड फूड","🥜","कार्टन",1800],
-["नहाने का साबुन","साबुन व पर्सनल केयर","🧼","100 g × 48 पीस गत्ता",1500],["कपड़े धोने का साबुन","साबुन व पर्सनल केयर","🧼","बड़ा गत्ता",900],["शैम्पू सैशे","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",500],["शैम्पू बोतल","साबुन व पर्सनल केयर","🧴","कार्टन",1400],["टूथपेस्ट","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",900],["टूथब्रश","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",500],["हेयर ऑयल","साबुन व पर्सनल केयर","🧴","कार्टन",1100],["कंघी","साबुन व पर्सनल केयर","💇","डिस्प्ले गत्ता",300],["क्रीम","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",700],["टैल्कम पाउडर","साबुन व पर्सनल केयर","🧴","कार्टन",1200],
+["नहाने का साबुन","साबुन व पर्सनल केयर","🧼","100 g × 48 पीस गत्ता",1500],["कपड़े धोने का साबुन","<h2>🛍️ किराना सामान</h2><h2>🛍️ किराना सामान</h2><h2>🛍️ किराना सामान</h2><h2>🛍️ किराना सामान</h2><h2>🛍️ किराना सामान</h2><h2>🛍️ किराना सामान</h2>साबुन व पर्सनल केयर","🧼","बड़ा गत्ता",900],["शैम्पू सैशे","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",500],["शैम्पू बोतल","साबुन व पर्सनल केयर","🧴","कार्टन",1400],["टूथपेस्ट","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",900],["टूथब्रश","साबुन व पर्सनल केयर","🪥","डिस्प्ले गत्ता",500],["हेयर ऑयल","साबुन व पर्सनल केयर","🧴","कार्टन",1100],["कंघी","साबुन व पर्सनल केयर","💇","डिस्प्ले गत्ता",300],["क्रीम","साबुन व पर्सनल केयर","🧴","डिस्प्ले गत्ता",700],["टैल्कम पाउडर","साबुन व पर्सनल केयर","🧴","कार्टन",1200],
 ["डिटर्जेंट पाउडर","कपड़े व घर की सफाई","🧺","1 kg × 20 पैक गत्ता",1500],["फिनाइल","कपड़े व घर की सफाई","🧴","1 L × 12 बोतल कार्टन",900],["फ्लोर क्लीनर","कपड़े व घर की सफाई","🧹","कार्टन",1000],["डिशवॉश बार","कपड़े व घर की सफाई","🧽","पूरा गत्ता",700],["डिशवॉश लिक्विड","कपड़े व घर की सफाई","🧴","कार्टन",850],["स्क्रबर","कपड़े व घर की सफाई","🧽","डिस्प्ले पैक",300],["टॉयलेट क्लीनर","कपड़े व घर की सफाई","🧴","कार्टन",1100],
 ["माचिस","घरेलू उपयोग","🔥","पूरा गत्ता",450],["मोमबत्ती","घरेलू उपयोग","🕯️","डिस्प्ले गत्ता",300],["अगरबत्ती","घरेलू उपयोग","🪔","डिस्प्ले गत्ता",600],["कपूर","घरेलू उपयोग","🪔","डिस्प्ले बॉक्स",400],["बैटरी","घरेलू उपयोग","🔋","डिस्प्ले गत्ता",700],["प्लास्टिक बैग","दुकान व पैकिंग","🛍️","बंडल",350],["पैकिंग टेप","दुकान व पैकिंग","📦","पूरा कार्टन",500],["किचन फॉइल","दुकान व पैकिंग","🥡","कार्टन",900],
 ["डायपर","बेबी केयर","👶","पूरा कार्टन",1800],["बेबी वाइप्स","बेबी केयर","👶","कार्टन",900],["बेबी सोप","बेबी केयर","🧼","गत्ता",700],
@@ -152,7 +161,180 @@ function showCart(){
  document.getElementById("total").textContent="कुल: ₹"+total.toFixed(2);
 }
 
-document.getElementById("orderForm").addEventListener("submit", async function(e){
+
+let voiceRecognizedItems = [];
+
+function hindiNumber(text) {
+  const numbers = {
+    "एक":1,"इक":1,"दो":2,"तीन":3,"चार":4,"पांच":5,"पाँच":5,
+    "छह":6,"छः":6,"सात":7,"आठ":8,"नौ":9,"दस":10,
+    "आधा":0.5,"आधी":0.5,"डेढ़":1.5,"ढाई":2.5,
+    "एक":1,"पाव":0.25,"चौथाई":0.25
+  };
+  text = text.trim().toLowerCase();
+  if (numbers[text] !== undefined) return numbers[text];
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseVoiceOrder(transcript) {
+  const clean = transcript.toLowerCase()
+    .replace(/[।,!?]/g, " ")
+    .replace(/\s+/g, " ");
+
+  const matched = products
+    .map(p => ({
+      p,
+      name: p.name.toLowerCase().trim()
+    }))
+    .filter(x => clean.includes(x.name))
+    .sort((a,b) => b.name.length - a.name.length);
+
+  const found = [];
+  let used = "";
+
+  matched.forEach(({p,name}) => {
+    if (used.includes("|" + p.id + "|")) return;
+
+    const index = clean.indexOf(name);
+    if (index < 0) return;
+
+    const before = clean.slice(0,index);
+    const lastPart = before.split(/\bऔर\b|\bफिर\b/).pop().trim();
+
+    const quantityMatch = lastPart.match(
+      /(\d+(?:\.\d+)?|एक|दो|तीन|चार|पांच|पाँच|छह|छः|सात|आठ|नौ|दस|आधा|आधी|डेढ़|ढाई|पाव|चौथाई)\s*(किलो|kg|किलोग्राम|ग्राम|ग्राम|लीटर|लिटर)?\s*$/
+    );
+
+    let qty = 1;
+    let unit = "";
+
+    if (quantityMatch) {
+      qty = hindiNumber(quantityMatch[1]);
+      unit = quantityMatch[2] || "";
+    }
+
+    if (!qty || qty <= 0) return;
+
+    const isWeight = ["किलो","kg","किलोग्राम","ग्राम"].includes(unit);
+    const isLiter = ["लीटर","लिटर"].includes(unit);
+
+    if (isWeight && unit === "ग्राम") qty = qty / 1000;
+
+    if (isWeight && !p.loose) return;
+    if (isLiter) return;
+
+    const mode = isWeight && p.loose ? "loose" : "pack";
+
+    if (mode === "loose" &&
+        (qty < 0.25 || Math.round(qty * 4) !== qty * 4)) return;
+
+    found.push({id:p.id, name:p.name, qty, mode});
+    used += "|" + p.id + "|";
+  });
+
+  return found;
+}
+
+const voiceBtn = document.getElementById("voiceOrderBtn");
+const voiceStatus = document.getElementById("voiceStatus");
+const voicePreview = document.getElementById("voicePreview");
+const voiceConfirm = document.getElementById("confirmVoiceOrderBtn");
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+  voiceBtn.disabled = true;
+  voiceStatus.textContent =
+    "आपके ब्राउज़र में आवाज पहचानने की सुविधा उपलब्ध नहीं है। Chrome में खोलकर देखें।";
+} else {
+  const recognition = new SpeechRecognition();
+  recognition.lang = "hi-IN";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  voiceBtn.addEventListener("click", () => {
+    voiceStatus.textContent = "सुन रहा है... अब सामान बोलें।";
+    voicePreview.textContent = "";
+    voiceConfirm.style.display = "none";
+    voiceRecognizedItems = [];
+    recognition.start();
+  });
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    voiceStatus.textContent = "आपने कहा: " + transcript;
+
+    voiceRecognizedItems = parseVoiceOrder(transcript);
+
+    if (!voiceRecognizedItems.length) {
+      voicePreview.textContent =
+        "सामान पहचान नहीं पाया। कृपया सामान का नाम और मात्रा साफ बोलें।";
+      return;
+    }
+
+    voicePreview.innerHTML =
+      "<b>पहचाना गया सामान:</b><br>" +
+      voiceRecognizedItems.map(item =>
+        "• " + item.name + " — " +
+        (item.mode === "loose" ? item.qty + " kg खुला" : item.qty + " पैक")
+      ).join("<br>");
+
+    voiceConfirm.style.display = "block";
+  };
+
+  recognition.onerror = (event) => {
+    voiceStatus.textContent =
+      "आवाज पहचानने में समस्या: " + event.error +
+      ". दोबारा कोशिश करें।";
+  };
+
+  recognition.onend = () => {
+    voiceBtn.disabled = false;
+  };
+
+  voiceBtn.addEventListener("click", () => {
+    voiceBtn.disabled = true;
+  });
+}
+
+voiceConfirm.addEventListener("click", () => {
+  if (!voiceRecognizedItems.length) return;
+
+  voiceRecognizedItems.forEach(item => {
+    const p = products.find(x => x.id === item.id);
+    if (!p) return;
+
+    const key = `${p.id}_${item.mode}`;
+
+    if (!cart[key]) {
+      cart[key] = {
+        id: p.id,
+        mode: item.mode,
+        qty: 0
+      };
+    }
+
+    cart[key].qty = Math.round(
+      (cart[key].qty + item.qty) * 100
+    ) / 100;
+  });
+
+  saveCart();
+  showCart();
+
+  voiceStatus.textContent = "सामान आपके कार्ट में जोड़ दिया गया है।";
+  voicePreview.textContent = "";
+  voiceConfirm.style.display = "none";
+  voiceRecognizedItems = [];
+
+  document.getElementById("cart").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+});
+                                             document.getElementById("orderForm").addEventListener("submit", async function(e){
  e.preventDefault();
  const rows=cartRows();
  if(!rows.length){alert("पहले कार्ट में सामान जोड़ें।");return;}
