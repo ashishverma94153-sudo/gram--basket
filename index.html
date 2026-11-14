@@ -133,7 +133,11 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  createdAt:serverTimestamp(),
  source:"website"
  });
- const orderId = orderRef.id;
+ const orderId = orderRef.id;await setDoc(doc(db,"OrderTracking",orderId),{
+  status:"नया",
+  createdAt:serverTimestamp(),
+  updatedAt:serverTimestamp()
+});
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
  const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर
 
