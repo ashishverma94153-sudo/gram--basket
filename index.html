@@ -161,7 +161,9 @@ try {
     createdAt:serverTimestamp(),
     updatedAt:serverTimestamp()
   });
+  alert("OrderTracking में भी सेव हो गया!");
 } catch(trackingError) {
+  alert("Tracking Error: " + trackingError.code + " — " + trackingError.message);
   console.error("Tracking Error:", trackingError);
 }
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
