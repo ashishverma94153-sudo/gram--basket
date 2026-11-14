@@ -137,7 +137,7 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
  const itemLines=rows.map(r=>`• ${r.p.name} — ${r.mode==='loose'?`खुला ${r.qty} kg`:`${r.p.pack} × ${r.qty}`} = ₹${lineTotal(r).toFixed(2)}`).join("\n");
  const orderMessage=`🛒 GRAM BASKET — नया ऑर्डर
 
-🆔 Order ID: ${orderId}
+🆔 Order ID: ${orderId}alert("Order ID: " + orderId);
 
 👤 ग्राहक: ${customerName}\n📱 मोबाइल: ${mobile}\n📍 पता: ${address}\n\n📦 सामान:\n${itemLines}\n\n💰 कुल: ₹${total.toFixed(2)}\nकृपया ऑर्डर और उपलब्धता की पुष्टि करें।`;
  msg.textContent="ऑर्डर सफलतापूर्वक सेव हो गया! आपकी Order ID है: "+orderId+" । इसे संभालकर रखें। WhatsApp खुलेगा—वहाँ Send दबाएँ।";window.location.href="https://wa.me/919919213659?text="+encodeURIComponent(orderMessage);
