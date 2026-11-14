@@ -65,7 +65,7 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <footer>GRAM BASKET © 2026 · थोक किराना</footer>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, doc, setDoc,getdoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, doc, setDoc,getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
@@ -159,9 +159,7 @@ document.getElementById("orderForm").addEventListener("submit", async function(e
     createdAt:serverTimestamp(),
     updatedAt:serverTimestamp()
   });
-} catch(trackingError) {
-  alert("Tracking Error: " + trackingError.code + " - " + trackingError.message);
- }
+} 
   status:"नया",
   createdAt:serverTimestamp(),
   updatedAt:serverTimestamp()
