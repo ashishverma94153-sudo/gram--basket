@@ -246,7 +246,29 @@ document.getElementById("adminLogoutBtn").addEventListener("click",async()=>{awa
 onAuthStateChanged(auth,user=>{if(user&&user.uid===ADMIN_UID){document.getElementById("adminEditor").style.display="block";renderPriceEditor();}});
 
 }
-loadSavedPrices();showProducts();showCart();
+document.getElementById("trackOrderBtn").addEventListener("click", async () => {
+  const id = document.getElementById("trackingOrderId").value.trim();
+  const result = document.getElementById("trackingResult");
+
+  if (!id) {
+    result.textContent = "कृपया Order ID डालें।";
+    return;
+  }
+
+  result.textContent = "ऑर्डर खोजा जा रहा है...";
+
+  try {
+    const snap = await getDoc(doc(db, "OrderTracking", id));
+
+    if (snap.exists()) {
+      result.textContent = "आपके ऑर्डर की स्थिति: " + snap.data().status;
+    } else {
+      result.textContent = "यह Order ID नहीं मिली। कृपया सही ID डालें।";
+    }
+  } catch (error) {
+    result.textContent = "त्रुटि: " + error.message;
+  }
+});loadSavedPrices();showProducts();showCart();
 </script>
 
 <!-- Offline-safe product fallback: keeps the shop usable if Firebase module fails to load. -->
