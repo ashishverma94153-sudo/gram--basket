@@ -21,18 +21,20 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <header><h1>🛒 GRAM BASKET</h1><p>आपके गाँव की अपनी किराना दुकान</p></header>
 <div class="notice">📌 कीमतें अभी उदाहरण हैं। बिक्री शुरू करने से पहले नीचे कोड में अपने सही दाम भरें। अनाज/दालों में खुला सामान 250 ग्राम से, 250 ग्राम के अंतर में चुनें।</div>
 <div class="tools">
-<input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()">
-<select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
+
+<div style="display:flex;gap:8px;align-items:center;width:100%">
+  <input id="search" type="search" placeholder="🔍 सामान या ब्रांड खोजें…" oninput="showProducts()" style="flex:1;min-width:0">
+  <button type="button" id="voiceOrderBtn" style="width:52px;min-width:52px;padding:12px 5px;font-size:20px">🎙️</button>
 </div>
 
-<section id="voiceOrderSection" style="margin:14px 12px;padding:16px;background:white;border-radius:10px;border:1px solid #16753b">
-  <h2 style="padding:0;margin-top:0">🎙️ बोलकर किराना ऑर्डर</h2>
-  <p>माइक दबाकर हिंदी में सामान और उसकी मात्रा बोलें।</p>
-  <button type="button" id="voiceOrderBtn" style="width:100%;padding:14px;font-size:16px">🎙️ बोलकर बोलें</button>
-  <p id="voiceStatus" role="status">उदाहरण: दो किलो चावल और आधा किलो अरहर दाल।</p>
-  <div id="voicePreview"></div>
-  <button type="button" id="confirmVoiceOrderBtn" style="display:none;width:100%;margin-top:10px">सूची सही है — कार्ट में जोड़ें</button>
-</section>
+<p id="voiceStatus" style="font-size:12px;margin:5px 0"></p>
+<div id="voicePreview"></div>
+<button type="button" id="confirmVoiceOrderBtn" style="display:none;width:100%;margin:8px 0">सूची सही है — कार्ट में जोड़ें</button>
+
+<select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
+  
+</div>
+  
   <h2>🛍️ किराना सामान</h2>
 <div id="count" style="padding:0 12px;color:#666"></div>
 <div id="products" class="products"></div>
