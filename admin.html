@@ -256,21 +256,114 @@ function updateDashboard(){
   
 // LOAD PRODUCTS  
   
-async function loadProducts(){  
+// LOAD CUSTOMER PRODUCTS + FIREBASE SAVED PRICES
+
+const looseCategories = new Set([
+ "अनाज","दालें","चीनी व गुड़","आटा व बेसन",
+ "सूखे मेवे व बीज","नमक व मसाले"
+]);
+
+async function loadProducts(){
+
+ if(!allowed()) return;
+
+ try {
+  // Customer वेबसाइट से 308 सामानों की सूची पढ़ें
+  const response = await fetch("/index.html?admin="+Date.now());
+
+  if(!response.ok) {
+   throw new Error("Customer index.html नहीं मिला।");
+  }
+
+  const html = await response.text();
+  const start = html.indexOf("const rawProducts");
+
+  if(start < 0) {
+   throw new Error("Customer Product List नहीं मिली।");
+  }
+
+  const open = html.indexOf("[",start);
+  let depth = 0, quote = "", escaped = false, end = -1;
+
+  for(let i=open;i<html.length;i++){
+   const ch=html[i];
+
+   if(quote){
+    if(escaped) escaped=false;
+    else if(ch==="\\") escaped=true;
+    else if(ch===quote) quote="";
+    continue;
+   }
+
+   if(ch==='"' || ch==="'"){
+    quote=ch;
+    continue;
+   }
+
+   if(ch==="[") depth++;
+   if(ch==="]"){
+    depth--;
+    if(depth===0){end=i+1;break;}
+   }
+  }
+
+  if(end<0) throw new Error("Product List अधूरी है।");
+
+  const rawProducts=JSON.parse(html.slice(open,end));
+
+  const defaults=rawProducts.map((p,i)=>{
+   const match=String(p[3]).match(/(\d+(?:\.\d+)?)\s*kg/i);
+   const packKg=match?Number(match[1]):0;
+
+   return {
+    id:String(i+1),
+    name:p[0],
+    category:p[1],
+    emoji:p[2],
+    pack:p[3],
+    packPrice:Number(p[4])||0,
+    packSalePrice:0,
+    packKg,
+    loose:looseCategories.has(p[1]) && packKg>0,
+    loosePricePerKg:0,
+    looseSalePricePerKg:0,
+    isActive:true
+   };
+  });
+
+  // Firebase में सेव पुराने दाम पढ़ें
+  const snap=await getDocs(collection(db,"Products"));
+  const saved=new Map();
+
+  snap.forEach(d=>{
+   saved.set(String(d.id),{...d.data(),id:String(d.id)});
+  });
+
+  // Customer के सामान + Firebase के पुराने दाम
+  rows=defaults.map(p=>{
+   const old=saved.get(p.id);
+   return old ? {...p,...old,id:p.id} : p;
+  }).filter(p=>p.isActive!==false);
+
+  // Admin में जोड़े गए custom सामान भी दिखाएँ
+  snap.forEach(d=>{
+   if(!/^\d+$/.test(String(d.id))){
+    const p={...d.data(),id:String(d.id)};
+    if(p.isActive!==false) rows.push(p);
+   }
+  });
+
+  updateCategoryFilter();
+  renderProducts();
+  updateDashboard();
+
+ } catch(e) {
+  console.error(e);
+  $("list").textContent="सामान लोड नहीं हुए: "+e.message;
+  $("status").textContent="लोडिंग में समस्या: "+e.message;
+ }
+}
   
- if(!allowed()) return;  
-  
- const snap=await getDocs(collection(db,"Products"));  
-  
- rows=snap.docs.map(d=>({  
-  ...d.data(),  
-  id:d.id  
- })).filter(p=>p.isActive!==false);  
-  
- updateCategoryFilter();  
- renderProducts();  
- updateDashboard();  
-}  
   
   
 function updateCategoryFilter(){  
