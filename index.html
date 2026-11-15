@@ -4,7 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GRAM BASKET — किराना ऑर्डर</title>
-<style>
+.fav-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:50%;
+  background:white;
+  color:#999;
+  font-size:23px;
+  cursor:pointer;
+  box-shadow:0 2px 6px #0002;
+}
+.fav-btn.active{
+  color:#e53955;
+}
+.product-card{
+  position:relative;
+}<style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f7f2;color:#222}
 header{background:#16753b;color:#fff;padding:18px 14px;text-align:center}header h1{margin:0;font-size:27px}header p{margin:7px 0 0}
 .notice{margin:12px;padding:12px;background:#fff3cd;border-radius:8px;font-size:14px}
@@ -41,7 +60,9 @@ section{background:white;margin:14px 12px;padding:14px;border-radius:10px}input,
 <div id="voicePreview"></div>
 <button type="button" id="confirmVoiceOrderBtn" style="display:none;width:100%;margin:8px 0">सूची सही है — कार्ट में जोड़ें</button>
 <select id="category" onchange="showProducts()"><option value="">सभी कैटेगरी</option></select>
-  
+  <button id="showFavoritesBtn" type="button">
+  ❤️ Favourite
+  </button>
   
 </div>
   
@@ -121,7 +142,39 @@ function saveCart(){try{localStorage.setItem("gramBasketCartV2",JSON.stringify(c
 function activePrice(p,mode){const regular=mode==="loose"?p.loosePricePerKg:p.packPrice;const sale=mode==="loose"?p.looseSalePricePerKg:p.packSalePrice;return sale>0&&sale<regular?sale:regular;}
 function priceHTML(regular,sale){if(sale>0&&sale<regular){const off=Math.round((regular-sale)*100/regular);return `<div class="price"><del style="color:#777;font-weight:normal">₹${regular}</del> <b>₹${sale}</b> <span style="background:#ffe0e0;color:#b00020;border-radius:5px;padding:2px 5px;font-size:11px">${off}% OFF</span></div>`;}return `<div class="price">₹${regular}</div>`;}
 function clearCart(){Object.keys(cart).forEach(k=>delete cart[k]);saveCart();showCart();document.getElementById("message").textContent="कार्ट खाली कर दिया गया है।";}
-const categories=[...new Set(products.map(p=>p.category))];
+let favoriteItems = JSON.parse(
+  localStorage.getItem("gramBasketFavorites") || "[]"
+);
+
+let showOnlyFavorites = false;
+
+window.toggleFavorite = function(id){
+  id = String(id);
+
+  if(favoriteItems.includes(id)){
+    favoriteItems = favoriteItems.filter(x => x !== id);
+  } else {
+    favoriteItems.push(id);
+  }
+
+  localStorage.setItem(
+    "gramBasketFavorites",
+    JSON.stringify(favoriteItems)
+  );
+
+  showProducts();
+};
+
+document.getElementById("showFavoritesBtn")
+.addEventListener("click", function(){
+  showOnlyFavorites = !showOnlyFavorites;
+
+  this.textContent = showOnlyFavorites
+    ? "🛍️ सभी सामान"
+    : "❤️ Favourite";
+
+  showProducts();
+});const categories=[...new Set(products.map(p=>p.category))];
 document.getElementById("category").innerHTML += categories.map(c=>`<option value="${c}">${c}</option>`).join("");
 
 function showProducts(){
@@ -131,7 +184,7 @@ function showProducts(){
  document.getElementById("products").innerHTML=list.map(p=>{
   const looseOption=p.loose?`<label style="font-size:13px;text-align:left;margin-top:8px">खुला वजन (न्यूनतम 250 ग्राम)<select id="mode-${p.id}" style="width:100%;padding:8px;margin-top:4px;border:1px solid #bbb;border-radius:6px"><option value="pack">${p.pack} — पैक/थोक</option><option value="loose">खुला — ₹${p.looseSalePricePerKg>0&&p.looseSalePricePerKg<p.loosePricePerKg?p.looseSalePricePerKg:p.loosePricePerKg}/kg</option></select></label><label id="weight-label-${p.id}" style="display:none;font-size:13px;text-align:left">वजन (kg; जैसे 0.25, 0.5, 2.5)<input id="weight-${p.id}" type="number" min="0.25" step="0.25" value="0.25" style="width:100%;padding:8px;margin:4px 0;border:1px solid #bbb;border-radius:6px"></label>`:"";
   const regular=p.packPrice,sale=p.packSalePrice;
-  return `<div class="card"><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div>${priceHTML(regular,sale)}${looseOption}<button style="margin-top:10px" onclick="addProduct(${p.id})">+ कार्ट में जोड़ें</button></div>`;
+  return `<div class="card"><button class="fav-btn ${favoriteItems.includes(String(p.id))?'active':''}" onclick="toggleFavorite('${p.id}')" type="button">${favoriteItems.includes(String(p.id))?'♥':'♡'}</button><div class="emoji">${p.emoji}</div><div class="category">${p.category}</div><h3>${p.name}</h3><div class="pack">📦 ${p.pack}</div>${priceHTML(regular,sale)}${looseOption}<button style="margin-top:10px" onclick="addProduct(${p.id})">+ कार्ट में जोड़ें</button></div>`;<div class="pack">📦 ${p.pack}</div>${priceHTML(regular,sale)}${looseOption}<button style="margin-top:10px" onclick="addProduct(${p.id})">+ कार्ट में जोड़ें</button></div>`;
  }).join("")||"<p>कोई सामान नहीं मिला।</p>";
  list.filter(p=>p.loose).forEach(p=>{const sel=document.getElementById(`mode-${p.id}`);sel.addEventListener('change',()=>{document.getElementById(`weight-label-${p.id}`).style.display=sel.value==='loose'?'block':'none';});});
 }
