@@ -1,803 +1,779 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GRAM BASKET Admin</title>
-<style>
-*{box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#f3f7f2;margin:0;color:#222}
-header{background:#16753b;color:white;text-align:center;padding:18px}
-main{max-width:900px;margin:auto;padding:12px}
-section{background:white;border-radius:10px;padding:14px;margin:12px 0}
-input,select{width:100%;padding:11px;margin:6px 0;border:1px solid #bbb;border-radius:7px;font-size:15px}
-button{padding:10px 12px;background:#16753b;color:white;border:0;border-radius:7px;margin:4px 2px;cursor:pointer}
-button.delete{background:#a52828}
-button.secondary{background:#555}
-.row{border-bottom:1px solid #ddd;padding:12px 0;overflow-wrap:anywhere}
-#panel{display:none}
-.order-card{border:1px solid #ddd;border-radius:9px;padding:12px;margin:12px 0;background:#fff}
-.order-id{font-size:13px;overflow-wrap:anywhere;color:#555}
-.status-label{font-weight:bold;color:#16753b}
-.small{font-size:13px;color:#666}
-.dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.stat{background:#eaf4ec;border-radius:9px;padding:13px;text-align:center}
-.stat strong{display:block;font-size:25px;color:#16753b;margin-top:5px}
-.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.product-actions{display:flex;gap:6px;flex-wrap:wrap}
-.product-actions button{flex:1}
-.check-row{display:flex;align-items:center;gap:8px;margin:8px 0}
-.check-row input{width:auto;margin:0}
-.notice{background:#fff6df;padding:12px;border-radius:8px;font-size:13px;line-height:1.6}
-@media(max-width:500px){.filter-row{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-
-<header>
-<h1>🔐 GRAM BASKET Admin</h1>
-<p>दुकान और ऑर्डर मैनेजमेंट</p>
-</header>
-
-<main>
-<section>
-<h2>Admin Login</h2>
-<form id="login">
-<input id="email" type="email" placeholder="Admin email" required>
-<input id="password" type="password" placeholder="Admin password" required>
-<button type="submit">Login</button>
-</form>
-<p id="status"></p>
-<button id="logout" class="secondary" style="display:none">Logout</button>
-</section>
-
-<div id="panel">
-
-<section>
-<h2>📊 दुकान का Dashboard</h2>
-<div class="dashboard">
-<div class="stat">कुल सामान<strong id="productCount">0</strong></div>
-<div class="stat">कुल ऑर्डर<strong id="orderCount">0</strong></div>
-<div class="stat">नए ऑर्डर<strong id="newOrderCount">0</strong></div>
-<div class="stat">बिना कीमत वाले सामान<strong id="unpricedCount">0</strong></div>
-</div>
-</section>
-
-<section>
-<h2>📦 ऑर्डर मैनेजमेंट</h2>
-<p class="small">ग्राहकों के ऑर्डर देखें और उनकी स्थिति बदलें।</p>
-<button id="refreshOrders" type="button">ऑर्डर रिफ्रेश करें</button>
-<button id="downloadOrders" type="button">⬇️ ऑर्डर रिपोर्ट डाउनलोड करें</button>
-<div id="ordersList">ऑर्डर लोड हो रहे हैं...</div>
-</section>
-
-<section>
-<h2>➕ नया सामान जोड़ें</h2>
-<input id="name" placeholder="सामान का नाम">
-<input id="category" placeholder="कैटेगरी">
-<input id="emoji" placeholder="इमोजी" value="🛒">
-<input id="pack" placeholder="पैक / मात्रा">
-<input id="price" type="number" min="0.01" step="0.01" placeholder="कीमत ₹">
-<button id="add" type="button">सामान जोड़ें</button>
-</section>
-
-<section>
-<h2>🛠️ सामान बदलें / हटाएँ</h2>
-<p class="small">कुल सक्रिय सामान: <b id="visibleProductCount">0</b></p>
-<div class="filter-row">
-<input id="productSearch" placeholder="🔍 सामान खोजें...">
-<select id="categoryFilter">
-<option value="">सभी कैटेगरी</option>
-</select>
-</div>
-<label class="check-row">
-<input type="checkbox" id="onlyUnpriced">
-केवल बिना कीमत वाले सामान दिखाएँ
-</label>
-<label class="check-row">
-<input type="checkbox" id="selectAllProducts">
-दिख रहे सभी सामान चुनें
-</label>
-<div class="row">
-<b>एक साथ कीमत बदलें</b>
-<p class="small">पहले सामान चुनें, फिर नई कीमत भरें।</p>
-<input id="bulkPrice" type="number" min="0" step="0.01" placeholder="नई कीमत ₹">
-<button id="bulkUpdate" type="button">चुने हुए सामानों की कीमत बदलें</button>
-</div>
-<div id="list">सामान लोड हो रहा है...</div>
-</section>
-
-<section>
-<h2>🚚 डिलीवरी सेटिंग</h2>
-<p class="small">यह सेटिंग Firebase में सेव होगी।</p>
-<label>डिलीवरी चार्ज ₹</label>
-<input id="deliveryFee" type="number" min="0" step="1" value="20">
-<label>न्यूनतम ऑर्डर राशि ₹</label>
-<input id="minimumOrder" type="number" min="0" step="1" value="100">
-<label>कितने रुपये के ऑर्डर पर डिलीवरी मुफ्त होगी?</label>
-<input id="freeDeliveryAbove" type="number" min="0" step="1" value="500">
-<p class="small">मुफ्त डिलीवरी की सीमा 0 रखने पर मुफ्त डिलीवरी बंद रहेगी।</p>
-<button id="saveDelivery" type="button">डिलीवरी सेटिंग सेव करें</button>
-<p id="deliveryStatus" class="small"></p>
-</section>
-
-<section>
-<h2>🔒 सुरक्षा जानकारी</h2>
-<div class="notice">
-Admin Login के साथ Firebase Firestore Rules भी सुरक्षित होने चाहिए।
-सिर्फ वेबसाइट पर Admin UID की जाँच पर्याप्त सुरक्षा नहीं है।
-Firestore Rules में भी केवल अधिकृत Admin को Products, Orders,
-OrderTracking और Settings में बदलाव की अनुमति दें।
-किसी को अपना Admin पासवर्ड न दें।
-</div>
-</section>
-
-</div>
-</main>
-
-<script type="module">
-
-import {
- initializeApp
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
-import {
- getFirestore,
- collection,
- getDocs,
- doc,
- setDoc,
- updateDoc,
- serverTimestamp,
- getDoc,
- writeBatch
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-
-import {
- getAuth,
- signInWithEmailAndPassword,
- signOut,
- onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
-
-const app=initializeApp({
- apiKey:"AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",
- authDomain:"gram-basket.firebaseapp.com",
- projectId:"gram-basket",
- storageBucket:"gram-basket.firebasestorage.app",
- messagingSenderId:"334817273306",
- appId:"1:334817273306:web:7876254dcc3a83801e8ce3"
-});
-
-const db=getFirestore(app);
-const auth=getAuth(app);
-const ADMIN_UID="gP0392TzG0Ot1P7uw65Hke8nQUL2";
-
-let rows=[];
-let allOrders=[];
-
-const $=id=>document.getElementById(id);
-
-function allowed(){
- return auth.currentUser && auth.currentUser.uid===ADMIN_UID;
-}
-
-function escapeHTML(value){
- return String(value??"").replace(/[&<>"']/g,ch=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- })[ch]);
-}
-
-function money(value){
- return Number(value||0).toFixed(2);
-}
-
-
-// LOGIN
-
-$("login").addEventListener("submit",async e=>{
- e.preventDefault();
- $("status").textContent="लॉगिन हो रहा है...";
-
- try{
-  const credential=await signInWithEmailAndPassword(
-   auth,$("email").value.trim(),$("password").value
-  );
-
-  if(credential.user.uid!==ADMIN_UID){
-   await signOut(auth);
-   throw new Error("यह खाता अधिकृत Admin नहीं है।");
-  }
-
-  $("status").textContent="लॉगिन सफल।";
-
- }catch(e){
-  $("status").textContent="लॉगिन विफल: "+e.message;
- }
-});
-
-
-// LOGOUT
-
-$("logout").addEventListener("click",async()=>{
- await signOut(auth);
- $("panel").style.display="none";
- $("logout").style.display="none";
- $("login").style.display="block";
- $("status").textContent="Logout हो गया।";
-});
-
-
-// AUTH STATE
-
-onAuthStateChanged(auth,async user=>{
-
- if(user && user.uid===ADMIN_UID){
-
-  $("panel").style.display="block";
-  $("logout").style.display="inline-block";
-  $("login").style.display="none";
-  $("status").textContent="Admin लॉगिन सफल।";
-
-  try{
-   await loadProducts();
-   await loadOrders();
-   await loadDeliverySettings();
-  }catch(e){
-   $("status").textContent="डेटा लोड नहीं हुआ: "+e.message;
-  }
-
- }else{
-
-  $("panel").style.display="none";
-  $("logout").style.display="none";
-  $("login").style.display="block";
-  rows=[];
-  allOrders=[];
-  updateDashboard();
- }
-});
-
-
-// DASHBOARD
-
-function updateDashboard(){
-
- $("productCount").textContent=rows.length;
- $("orderCount").textContent=allOrders.length;
-
- $("newOrderCount").textContent=
-  allOrders.filter(o=>(o.status||"नया")==="नया").length;
-
- $("unpricedCount").textContent=
-  rows.filter(p=>Number(p.packPrice||0)<=0).length;
-
- $("visibleProductCount").textContent=rows.length;
-}
-
-
-// LOAD PRODUCTS
-
-async function loadProducts(){
-
- if(!allowed()) return;
-
- const snap=await getDocs(collection(db,"Products"));
-
- rows=snap.docs.map(d=>({
-  ...d.data(),
-  id:d.id
- })).filter(p=>p.isActive!==false);
-
- updateCategoryFilter();
- renderProducts();
- updateDashboard();
-}
-
-
-function updateCategoryFilter(){
-
- const oldValue=$("categoryFilter").value;
-
- const categories=[
-  ...new Set(rows.map(p=>p.category).filter(Boolean))
- ].sort();
-
- $("categoryFilter").innerHTML=
-  '<option value="">सभी कैटेगरी</option>'+
-  categories.map(c=>
-   `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`
-  ).join("");
-
- if(categories.includes(oldValue)){
-  $("categoryFilter").value=oldValue;
- }
-}
-
-
-function getFilteredProducts(){
-
- const q=$("productSearch").value.trim().toLowerCase();
- const category=$("categoryFilter").value;
- const onlyUnpriced=$("onlyUnpriced").checked;
-
- return rows.filter(p=>{
-
-  const matchesSearch=
-   String(p.name||"").toLowerCase().includes(q);
-
-  const matchesCategory=
-   !category || p.category===category;
-
-  const matchesPrice=
-   !onlyUnpriced || Number(p.packPrice||0)<=0;
-
-  return matchesSearch && matchesCategory && matchesPrice;
- });
-}
-
-
-// DISPLAY PRODUCTS
-
-function renderProducts(){
-
- const filtered=getFilteredProducts();
-
- $("list").innerHTML=filtered.map(p=>`
-
- <div class="row">
-
-  <label class="check-row">
-   <input type="checkbox" class="productSelect"
-    data-id="${escapeHTML(p.id)}">
-   <b>${escapeHTML(p.emoji||"🛒")} ${escapeHTML(p.name)}</b>
-  </label>
-
-  <input data-field="name" data-id="${escapeHTML(p.id)}"
-   value="${escapeHTML(p.name||"")}" placeholder="नाम">
-
-  <input data-field="category" data-id="${escapeHTML(p.id)}"
-   value="${escapeHTML(p.category||"")}" placeholder="कैटेगरी">
-
-  <input data-field="emoji" data-id="${escapeHTML(p.id)}"
-   value="${escapeHTML(p.emoji||"🛒")}" placeholder="इमोजी">
-
-  <input data-field="pack" data-id="${escapeHTML(p.id)}"
-   value="${escapeHTML(p.pack||"")}" placeholder="पैक">
-
-  <input data-field="packPrice" data-id="${escapeHTML(p.id)}"
-   type="number" min="0" step="0.01"
-   value="${Number(p.packPrice)||0}" placeholder="कीमत">
-
-  <div class="product-actions">
-   <button data-action="save-product" data-id="${escapeHTML(p.id)}">
-    बदलाव सेव करें
-   </button>
-   <button class="delete" data-action="remove-product"
-    data-id="${escapeHTML(p.id)}">हटाएँ</button>
-  </div>
-
- </div>
-
- `).join("") || "कोई सामान नहीं मिला।";
-
- $("visibleProductCount").textContent=rows.length;
-}
-
-
-// FILTER EVENTS
-
-$("productSearch").addEventListener("input",renderProducts);
-$("categoryFilter").addEventListener("change",renderProducts);
-$("onlyUnpriced").addEventListener("change",renderProducts);
-
-$("selectAllProducts").addEventListener("change",e=>{
- document.querySelectorAll(".productSelect").forEach(cb=>{
-  cb.checked=e.target.checked;
- });
-});
-
-
-// SAVE PRODUCT
-
-async function saveProduct(id){
-
- if(!allowed()) return;
-
- const p=rows.find(x=>x.id===id);
- if(!p) return;
-
- const fields=document.querySelectorAll(
-  `[data-id="${CSS.escape(id)}"][data-field]`
- );
-
- const values={};
-
- fields.forEach(el=>{
-  values[el.dataset.field]=el.value;
- });
-
- const v={
-  ...p,
-  name:(values.name||"").trim(),
-  category:(values.category||"").trim(),
-  emoji:(values.emoji||"🛒").trim()||"🛒",
-  pack:(values.pack||"").trim(),
-  packPrice:Number(values.packPrice),
-  isActive:true
- };
-
- if(!v.name || !v.category || !v.pack ||
-    !Number.isFinite(v.packPrice) || v.packPrice<0){
-  alert("सही जानकारी भरें।");
-  return;
- }
-
- try{
-  await setDoc(doc(db,"Products",id),v);
-  await loadProducts();
-  $("status").textContent="सामान अपडेट हो गया।";
- }catch(e){
-  alert("सेव नहीं हुआ: "+e.message);
- }
-}
-
-
-// REMOVE PRODUCT
-
-async function removeProduct(id){
-
- if(!allowed()) return;
-
- if(!confirm("क्या यह सामान वेबसाइट से हटाना चाहते हैं?")) return;
-
- try{
-  const p=rows.find(x=>x.id===id);
-  if(!p) return;
-
-  await setDoc(doc(db,"Products",id),{
-   ...p,
-   isActive:false
-  });
-
-  await loadProducts();
-  $("status").textContent="सामान छिपा दिया गया।";
-
- }catch(e){
-  alert("हटाया नहीं गया: "+e.message);
- }
-}
-
-
-// PRODUCT BUTTONS
-
-$("list").addEventListener("click",async e=>{
-
- const btn=e.target.closest("button[data-action]");
- if(!btn) return;
-
- const id=btn.dataset.id;
-
- if(btn.dataset.action==="save-product") await saveProduct(id);
- if(btn.dataset.action==="remove-product") await removeProduct(id);
-});
-
-
-// ADD PRODUCT
-
-$("add").addEventListener("click",async()=>{
-
- if(!allowed()) return;
-
- const name=$("name").value.trim();
- const category=$("category").value.trim();
- const emoji=$("emoji").value.trim()||"🛒";
- const pack=$("pack").value.trim();
- const packPrice=Number($("price").value);
-
- if(!name || !category || !pack ||
-    !Number.isFinite(packPrice) || packPrice<=0){
-  alert("नाम, कैटेगरी, पैक और सही कीमत भरें।");
-  return;
- }
-
- const id="custom_"+Date.now();
-
- const p={
-  id,name,category,emoji,pack,packPrice,
-  packSalePrice:0,packKg:0,loose:false,
-  loosePricePerKg:0,looseSalePricePerKg:0,isActive:true
- };
-
- try{
-  await setDoc(doc(db,"Products",id),p);
-
-  ["name","category","pack","price"].forEach(x=>$(x).value="");
-  $("emoji").value="🛒";
-
-  await loadProducts();
-  $("status").textContent="नया सामान सेव हो गया।";
-
- }catch(e){
-  alert("सामान सेव नहीं हुआ: "+e.message);
- }
-});
-
-
-// BULK PRICE UPDATE
-
-$("bulkUpdate").addEventListener("click",async()=>{
-
- if(!allowed()) return;
-
- const selected=[...document.querySelectorAll(".productSelect:checked")];
-
- if(selected.length===0){
-  alert("पहले सामान चुनें।");
-  return;
- }
-
- const newPrice=Number($("bulkPrice").value);
-
- if(!Number.isFinite(newPrice)||newPrice<0){
-  alert("सही नई कीमत भरें।");
-  return;
- }
-
- if(selected.length>500){
-  alert("एक बार में अधिकतम 500 सामान बदल सकते हैं।");
-  return;
- }
-
- if(!confirm(selected.length+" सामानों की कीमत ₹"+newPrice+" करना चाहते हैं?")) return;
-
- try{
-  const batch=writeBatch(db);
-
-  selected.forEach(cb=>{
-   const p=rows.find(x=>x.id===cb.dataset.id);
-   if(p){
-    batch.set(doc(db,"Products",p.id),
-     {...p,packPrice:newPrice},{merge:true});
-   }
-  });
-
-  await batch.commit();
-
-  $("bulkPrice").value="";
-  $("selectAllProducts").checked=false;
-
-  await loadProducts();
-  alert("चुने हुए सामानों की कीमत बदल गई।");
-
- }catch(e){
-  alert("कीमत अपडेट नहीं हुई: "+e.message);
- }
-});
-
-
-// ORDER MANAGEMENT
-
-const orderStatuses=[
- "नया","कन्फर्म","तैयार हो रहा है",
- "डिलीवरी के लिए निकला","पूरा हुआ","रद्द"
-];
-
-async function loadOrders(){
-
- if(!allowed()) return;
-
- $("ordersList").textContent="ऑर्डर लोड हो रहे हैं...";
-
- try{
-  const snap=await getDocs(collection(db,"Orders"));
-
-  allOrders=snap.docs.map(d=>({
-   id:d.id,
-   ...d.data()
-  }));
-
-  allOrders.sort((a,b)=>{
-   const ta=a.createdAt?.toMillis?.()||0;
-   const tb=b.createdAt?.toMillis?.()||0;
-   return tb-ta;
-  });
-
-  renderOrders();
-  updateDashboard();
-
- }catch(e){
-  $("ordersList").textContent="ऑर्डर लोड नहीं हुए: "+e.message;
- }
-}
-
-
-function renderOrders(){
-
- $("ordersList").innerHTML=allOrders.map(o=>`
-
- <div class="order-card">
-  <b>🛒 ग्राहक: ${escapeHTML(o.customerName||"")}</b>
-  <p class="order-id">Order ID: ${escapeHTML(o.id)}</p>
-  <p>📱 मोबाइल: ${escapeHTML(o.mobile||"")}</p>
-  <p>📍 पता: ${escapeHTML(o.address||"")}</p>
-  <p>💰 कुल: ₹${money(o.total)}</p>
-  <p class="status-label">वर्तमान स्थिति: ${escapeHTML(o.status||"नया")}</p>
-  <label>नई स्थिति चुनें:</label>
-
-  <select data-order-status="${escapeHTML(o.id)}">
-   ${orderStatuses.map(s=>`
-    <option value="${s}" ${s===(o.status||"नया")?"selected":""}>${s}</option>
-   `).join("")}
-  </select>
-
-  <button data-action="change-order" data-id="${escapeHTML(o.id)}">
-   Status सेव करें
-  </button>
- </div>
-
- `).join("") || "अभी कोई ऑर्डर नहीं है।";
-}
-
-
-$("ordersList").addEventListener("click",async e=>{
- const btn=e.target.closest('button[data-action="change-order"]');
- if(btn) await changeOrderStatus(btn.dataset.id);
-});
-
-
-async function changeOrderStatus(id){
-
- if(!allowed()){
-  alert("पहले Admin Login करें।");
-  return;
- }
-
- const select=document.querySelector(
-  `[data-order-status="${CSS.escape(id)}"]`
- );
-
- if(!select) return;
-
- const newStatus=select.value;
-
- if(!orderStatuses.includes(newStatus)){
-  alert("गलत Status चुना गया है।");
-  return;
- }
-
- try{
-  const batch=writeBatch(db);
-
-  batch.update(doc(db,"Orders",id),{
-   status:newStatus
-  });
-
-  batch.set(doc(db,"OrderTracking",id),{
-   status:newStatus,
-   updatedAt:serverTimestamp()
-  },{merge:true});
-
-  await batch.commit();
-
-  alert("ऑर्डर का Status सफलतापूर्वक बदल गया!");
-  await loadOrders();
-
- }catch(e){
-  alert("Status अपडेट नहीं हुआ: "+e.code+" — "+e.message);
- }
-}
-
-$("refreshOrders").addEventListener("click",loadOrders);
-
-
-// CSV REPORT
-
-function csvCell(value){
- return '"'+String(value??"").replace(/"/g,'""')+'"';
-}
-
-$("downloadOrders").addEventListener("click",()=>{
-
- if(!allowed()) return;
-
- if(allOrders.length===0){
-  alert("डाउनलोड करने के लिए कोई ऑर्डर नहीं है।");
-  return;
- }
-
- const headings=[
-  "Order ID","ग्राहक का नाम","मोबाइल","पता","कुल राशि","स्थिति"
- ];
-
- const lines=[headings.map(csvCell).join(",")];
-
- allOrders.forEach(o=>{
-  lines.push([
-   o.id,o.customerName||"",o.mobile||"",
-   o.address||"",o.total||0,o.status||"नया"
-  ].map(csvCell).join(","));
- });
-
- const csv="\uFEFF"+lines.join("\r\n");
- const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
- const url=URL.createObjectURL(blob);
- const a=document.createElement("a");
-
- a.href=url;
- a.download="GRAM_BASKET_Orders.csv";
- a.click();
-
- URL.revokeObjectURL(url);
-});
-
-
-// DELIVERY SETTINGS
-
-async function loadDeliverySettings(){
-
- if(!allowed()) return;
-
- try{
-  const snap=await getDoc(doc(db,"Settings","delivery"));
-
-  if(snap.exists()){
-   const s=snap.data();
-   $("deliveryFee").value=s.deliveryFee??20;
-   $("minimumOrder").value=s.minimumOrder??100;
-   $("freeDeliveryAbove").value=s.freeDeliveryAbove??500;
-  }
-
- }catch(e){
-  $("deliveryStatus").textContent="सेटिंग लोड नहीं हुई: "+e.message;
- }
-}
-
-
-$("saveDelivery").addEventListener("click",async()=>{
-
- if(!allowed()) return;
-
- const deliveryFee=Number($("deliveryFee").value);
- const minimumOrder=Number($("minimumOrder").value);
- const freeDeliveryAbove=Number($("freeDeliveryAbove").value);
-
- if(
-  !Number.isFinite(deliveryFee)||deliveryFee<0||
-  !Number.isFinite(minimumOrder)||minimumOrder<0||
-  !Number.isFinite(freeDeliveryAbove)||freeDeliveryAbove<0
- ){
-  alert("सभी सेटिंग में सही राशि भरें।");
-  return;
- }
-
- try{
-  await setDoc(doc(db,"Settings","delivery"),{
-   deliveryFee,
-   minimumOrder,
-   freeDeliveryAbove,
-   updatedAt:serverTimestamp()
-  });
-
-  $("deliveryStatus").textContent="डिलीवरी सेटिंग सफलतापूर्वक सेव हो गई।";
-
- }catch(e){
-  $("deliveryStatus").textContent="सेव नहीं हुई: "+e.message;
- }
-});
-
-
-// ERROR HANDLING
-
-window.addEventListener("error",e=>{
- $("status").textContent="JavaScript Error: "+e.message;
-});
-
-window.addEventListener("unhandledrejection",e=>{
- $("status").textContent="Firebase Error: "+(e.reason?.message||e.reason);
-});
-
-</script>
-</body>
+<!DOCTYPE html>  <html lang="hi">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width,initial-scale=1">  
+<title>GRAM BASKET Admin</title>  
+<style>  
+*{box-sizing:border-box}  
+body{font-family:Arial,sans-serif;background:#f3f7f2;margin:0;color:#222}  
+header{background:#16753b;color:white;text-align:center;padding:18px}  
+main{max-width:900px;margin:auto;padding:12px}  
+section{background:white;border-radius:10px;padding:14px;margin:12px 0}  
+input,select{width:100%;padding:11px;margin:6px 0;border:1px solid #bbb;border-radius:7px;font-size:15px}  
+button{padding:10px 12px;background:#16753b;color:white;border:0;border-radius:7px;margin:4px 2px;cursor:pointer}  
+button.delete{background:#a52828}  
+button.secondary{background:#555}  
+.row{border-bottom:1px solid #ddd;padding:12px 0;overflow-wrap:anywhere}  
+#panel{display:none}  
+.order-card{border:1px solid #ddd;border-radius:9px;padding:12px;margin:12px 0;background:#fff}  
+.order-id{font-size:13px;overflow-wrap:anywhere;color:#555}  
+.status-label{font-weight:bold;color:#16753b}  
+.small{font-size:13px;color:#666}  
+.dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}  
+.stat{background:#eaf4ec;border-radius:9px;padding:13px;text-align:center}  
+.stat strong{display:block;font-size:25px;color:#16753b;margin-top:5px}  
+.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}  
+.product-actions{display:flex;gap:6px;flex-wrap:wrap}  
+.product-actions button{flex:1}  
+.check-row{display:flex;align-items:center;gap:8px;margin:8px 0}  
+.check-row input{width:auto;margin:0}  
+.notice{background:#fff6df;padding:12px;border-radius:8px;font-size:13px;line-height:1.6}  
+@media(max-width:500px){.filter-row{grid-template-columns:1fr}}  
+</style>  
+</head>  
+<body>  <header>  
+<h1>🔐 GRAM BASKET Admin</h1>  
+<p>दुकान और ऑर्डर मैनेजमेंट</p>  
+</header>  <main>  
+<section>  
+<h2>Admin Login</h2>  
+<form id="login">  
+<input id="email" type="email" placeholder="Admin email" required>  
+<input id="password" type="password" placeholder="Admin password" required>  
+<button type="submit">Login</button>  
+</form>  
+<p id="status"></p>  
+<button id="logout" class="secondary" style="display:none">Logout</button>  
+</section>  <div id="panel">  <section>  
+<h2>📊 दुकान का Dashboard</h2>  
+<div class="dashboard">  
+<div class="stat">कुल सामान<strong id="productCount">0</strong></div>  
+<div class="stat">कुल ऑर्डर<strong id="orderCount">0</strong></div>  
+<div class="stat">नए ऑर्डर<strong id="newOrderCount">0</strong></div>  
+<div class="stat">बिना कीमत वाले सामान<strong id="unpricedCount">0</strong></div>  
+</div>  
+</section>  <section>  
+<h2>📦 ऑर्डर मैनेजमेंट</h2>  
+<p class="small">ग्राहकों के ऑर्डर देखें और उनकी स्थिति बदलें।</p>  
+<button id="refreshOrders" type="button">ऑर्डर रिफ्रेश करें</button>  
+<button id="downloadOrders" type="button">⬇️ ऑर्डर रिपोर्ट डाउनलोड करें</button>  
+<div id="ordersList">ऑर्डर लोड हो रहे हैं...</div>  
+</section>  <section>  
+<h2>➕ नया सामान जोड़ें</h2>  
+<input id="name" placeholder="सामान का नाम">  
+<input id="category" placeholder="कैटेगरी">  
+<input id="emoji" placeholder="इमोजी" value="🛒">  
+<input id="pack" placeholder="पैक / मात्रा">  
+<input id="price" type="number" min="0.01" step="0.01" placeholder="कीमत ₹">  
+<button id="add" type="button">सामान जोड़ें</button>  
+</section>  <section>  
+<h2>🛠️ सामान बदलें / हटाएँ</h2>  
+<p class="small">कुल सक्रिय सामान: <b id="visibleProductCount">0</b></p>  
+<div class="filter-row">  
+<input id="productSearch" placeholder="🔍 सामान खोजें...">  
+<select id="categoryFilter">  
+<option value="">सभी कैटेगरी</option>  
+</select>  
+</div>  
+<label class="check-row">  
+<input type="checkbox" id="onlyUnpriced">  
+केवल बिना कीमत वाले सामान दिखाएँ  
+</label>  
+<label class="check-row">  
+<input type="checkbox" id="selectAllProducts">  
+दिख रहे सभी सामान चुनें  
+</label>  
+<div class="row">  
+<b>एक साथ कीमत बदलें</b>  
+<p class="small">पहले सामान चुनें, फिर नई कीमत भरें।</p>  
+<input id="bulkPrice" type="number" min="0" step="0.01" placeholder="नई कीमत ₹">  
+<button id="bulkUpdate" type="button">चुने हुए सामानों की कीमत बदलें</button>  
+</div>  
+<div id="list">सामान लोड हो रहा है...</div>  
+</section>  <section>  
+<h2>🚚 डिलीवरी सेटिंग</h2>  
+<p class="small">यह सेटिंग Firebase में सेव होगी।</p>  
+<label>डिलीवरी चार्ज ₹</label>  
+<input id="deliveryFee" type="number" min="0" step="1" value="20">  
+<label>न्यूनतम ऑर्डर राशि ₹</label>  
+<input id="minimumOrder" type="number" min="0" step="1" value="100">  
+<label>कितने रुपये के ऑर्डर पर डिलीवरी मुफ्त होगी?</label>  
+<input id="freeDeliveryAbove" type="number" min="0" step="1" value="500">  
+<p class="small">मुफ्त डिलीवरी की सीमा 0 रखने पर मुफ्त डिलीवरी बंद रहेगी।</p>  
+<button id="saveDelivery" type="button">डिलीवरी सेटिंग सेव करें</button>  
+<p id="deliveryStatus" class="small"></p>  
+</section>  <section>  
+<h2>🔒 सुरक्षा जानकारी</h2>  
+<div class="notice">  
+Admin Login के साथ Firebase Firestore Rules भी सुरक्षित होने चाहिए।  
+सिर्फ वेबसाइट पर Admin UID की जाँच पर्याप्त सुरक्षा नहीं है।  
+Firestore Rules में भी केवल अधिकृत Admin को Products, Orders,  
+OrderTracking और Settings में बदलाव की अनुमति दें।  
+किसी को अपना Admin पासवर्ड न दें।  
+</div>  
+</section>  </div>  
+</main>  <script type="module">  
+  
+import {  
+ initializeApp  
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";  
+  
+import {  
+ getFirestore,  
+ collection,  
+ getDocs,  
+ doc,  
+ setDoc,  
+ updateDoc,  
+ serverTimestamp,  
+ getDoc,  
+ writeBatch  
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";  
+  
+import {  
+ getAuth,  
+ signInWithEmailAndPassword,  
+ signOut,  
+ onAuthStateChanged  
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";  
+  
+  
+const app=initializeApp({  
+ apiKey:"AIzaSyDAqK1tjy1UzRGV11N47S0zxqbqBLnGjHs",  
+ authDomain:"gram-basket.firebaseapp.com",  
+ projectId:"gram-basket",  
+ storageBucket:"gram-basket.firebasestorage.app",  
+ messagingSenderId:"334817273306",  
+ appId:"1:334817273306:web:7876254dcc3a83801e8ce3"  
+});  
+  
+const db=getFirestore(app);  
+const auth=getAuth(app);  
+const ADMIN_UID="gP0392TzG0Ot1P7uw65Hke8nQUL2";  
+  
+let rows=[];  
+let allOrders=[];  
+  
+const $=id=>document.getElementById(id);  
+  
+function allowed(){  
+ return auth.currentUser && auth.currentUser.uid===ADMIN_UID;  
+}  
+  
+function escapeHTML(value){  
+ return String(value??"").replace(/[&<>"']/g,ch=>({  
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"  
+ })[ch]);  
+}  
+  
+function money(value){  
+ return Number(value||0).toFixed(2);  
+}  
+  
+  
+// LOGIN  
+  
+$("login").addEventListener("submit",async e=>{  
+ e.preventDefault();  
+ $("status").textContent="लॉगिन हो रहा है...";  
+  
+ try{  
+  const credential=await signInWithEmailAndPassword(  
+   auth,$("email").value.trim(),$("password").value  
+  );  
+  
+  if(credential.user.uid!==ADMIN_UID){  
+   await signOut(auth);  
+   throw new Error("यह खाता अधिकृत Admin नहीं है।");  
+  }  
+  
+  $("status").textContent="लॉगिन सफल।";  
+  
+ }catch(e){  
+  $("status").textContent="लॉगिन विफल: "+e.message;  
+ }  
+});  
+  
+  
+// LOGOUT  
+  
+$("logout").addEventListener("click",async()=>{  
+ await signOut(auth);  
+ $("panel").style.display="none";  
+ $("logout").style.display="none";  
+ $("login").style.display="block";  
+ $("status").textContent="Logout हो गया।";  
+});  
+  
+  
+// AUTH STATE  
+  
+onAuthStateChanged(auth,async user=>{  
+  
+ if(user && user.uid===ADMIN_UID){  
+  
+  $("panel").style.display="block";  
+  $("logout").style.display="inline-block";  
+  $("login").style.display="none";  
+  $("status").textContent="Admin लॉगिन सफल।";  
+  
+  try{  
+   await loadProducts();  
+   await loadOrders();  
+   await loadDeliverySettings();  
+  }catch(e){  
+   $("status").textContent="डेटा लोड नहीं हुआ: "+e.message;  
+  }  
+  
+ }else{  
+  
+  $("panel").style.display="none";  
+  $("logout").style.display="none";  
+  $("login").style.display="block";  
+  rows=[];  
+  allOrders=[];  
+  updateDashboard();  
+ }  
+});  
+  
+  
+// DASHBOARD  
+  
+function updateDashboard(){  
+  
+ $("productCount").textContent=rows.length;  
+ $("orderCount").textContent=allOrders.length;  
+  
+ $("newOrderCount").textContent=  
+  allOrders.filter(o=>(o.status||"नया")==="नया").length;  
+  
+ $("unpricedCount").textContent=  
+  rows.filter(p=>Number(p.packPrice||0)<=0).length;  
+  
+ $("visibleProductCount").textContent=rows.length;  
+}  
+  
+  
+// LOAD PRODUCTS  
+  
+async function loadProducts(){  
+  
+ if(!allowed()) return;  
+  
+ const snap=await getDocs(collection(db,"Products"));  
+  
+ rows=snap.docs.map(d=>({  
+  ...d.data(),  
+  id:d.id  
+ })).filter(p=>p.isActive!==false);  
+  
+ updateCategoryFilter();  
+ renderProducts();  
+ updateDashboard();  
+}  
+  
+  
+function updateCategoryFilter(){  
+  
+ const oldValue=$("categoryFilter").value;  
+  
+ const categories=[  
+  ...new Set(rows.map(p=>p.category).filter(Boolean))  
+ ].sort();  
+  
+ $("categoryFilter").innerHTML=  
+  '<option value="">सभी कैटेगरी</option>'+  
+  categories.map(c=>  
+   `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`  
+  ).join("");  
+  
+ if(categories.includes(oldValue)){  
+  $("categoryFilter").value=oldValue;  
+ }  
+}  
+  
+  
+function getFilteredProducts(){  
+  
+ const q=$("productSearch").value.trim().toLowerCase();  
+ const category=$("categoryFilter").value;  
+ const onlyUnpriced=$("onlyUnpriced").checked;  
+  
+ return rows.filter(p=>{  
+  
+  const matchesSearch=  
+   String(p.name||"").toLowerCase().includes(q);  
+  
+  const matchesCategory=  
+   !category || p.category===category;  
+  
+  const matchesPrice=  
+   !onlyUnpriced || Number(p.packPrice||0)<=0;  
+  
+  return matchesSearch && matchesCategory && matchesPrice;  
+ });  
+}  
+  
+  
+// DISPLAY PRODUCTS  
+  
+function renderProducts(){  
+  
+ const filtered=getFilteredProducts();  
+  
+ $("list").innerHTML=filtered.map(p=>`  
+  
+ <div class="row">  
+  
+  <label class="check-row">  
+   <input type="checkbox" class="productSelect"  
+    data-id="${escapeHTML(p.id)}">  
+   <b>${escapeHTML(p.emoji||"🛒")} ${escapeHTML(p.name)}</b>  
+  </label>  
+  
+  <input data-field="name" data-id="${escapeHTML(p.id)}"  
+   value="${escapeHTML(p.name||"")}" placeholder="नाम">  
+  
+  <input data-field="category" data-id="${escapeHTML(p.id)}"  
+   value="${escapeHTML(p.category||"")}" placeholder="कैटेगरी">  
+  
+  <input data-field="emoji" data-id="${escapeHTML(p.id)}"  
+   value="${escapeHTML(p.emoji||"🛒")}" placeholder="इमोजी">  
+  
+  <input data-field="pack" data-id="${escapeHTML(p.id)}"  
+   value="${escapeHTML(p.pack||"")}" placeholder="पैक">  
+  
+  <input data-field="packPrice" data-id="${escapeHTML(p.id)}"  
+   type="number" min="0" step="0.01"  
+   value="${Number(p.packPrice)||0}" placeholder="कीमत">  
+  
+  <div class="product-actions">  
+   <button data-action="save-product" data-id="${escapeHTML(p.id)}">  
+    बदलाव सेव करें  
+   </button>  
+   <button class="delete" data-action="remove-product"  
+    data-id="${escapeHTML(p.id)}">हटाएँ</button>  
+  </div>  
+  
+ </div>  
+  
+ `).join("") || "कोई सामान नहीं मिला।";  
+  
+ $("visibleProductCount").textContent=rows.length;  
+}  
+  
+  
+// FILTER EVENTS  
+  
+$("productSearch").addEventListener("input",renderProducts);  
+$("categoryFilter").addEventListener("change",renderProducts);  
+$("onlyUnpriced").addEventListener("change",renderProducts);  
+  
+$("selectAllProducts").addEventListener("change",e=>{  
+ document.querySelectorAll(".productSelect").forEach(cb=>{  
+  cb.checked=e.target.checked;  
+ });  
+});  
+  
+  
+// SAVE PRODUCT  
+  
+async function saveProduct(id){  
+  
+ if(!allowed()) return;  
+  
+ const p=rows.find(x=>x.id===id);  
+ if(!p) return;  
+  
+ const fields=document.querySelectorAll(  
+  `[data-id="${CSS.escape(id)}"][data-field]`  
+ );  
+  
+ const values={};  
+  
+ fields.forEach(el=>{  
+  values[el.dataset.field]=el.value;  
+ });  
+  
+ const v={  
+  ...p,  
+  name:(values.name||"").trim(),  
+  category:(values.category||"").trim(),  
+  emoji:(values.emoji||"🛒").trim()||"🛒",  
+  pack:(values.pack||"").trim(),  
+  packPrice:Number(values.packPrice),  
+  isActive:true  
+ };  
+  
+ if(!v.name || !v.category || !v.pack ||  
+    !Number.isFinite(v.packPrice) || v.packPrice<0){  
+  alert("सही जानकारी भरें।");  
+  return;  
+ }  
+  
+ try{  
+  await setDoc(doc(db,"Products",id),v);  
+  await loadProducts();  
+  $("status").textContent="सामान अपडेट हो गया।";  
+ }catch(e){  
+  alert("सेव नहीं हुआ: "+e.message);  
+ }  
+}  
+  
+  
+// REMOVE PRODUCT  
+  
+async function removeProduct(id){  
+  
+ if(!allowed()) return;  
+  
+ if(!confirm("क्या यह सामान वेबसाइट से हटाना चाहते हैं?")) return;  
+  
+ try{  
+  const p=rows.find(x=>x.id===id);  
+  if(!p) return;  
+  
+  await setDoc(doc(db,"Products",id),{  
+   ...p,  
+   isActive:false  
+  });  
+  
+  await loadProducts();  
+  $("status").textContent="सामान छिपा दिया गया।";  
+  
+ }catch(e){  
+  alert("हटाया नहीं गया: "+e.message);  
+ }  
+}  
+  
+  
+// PRODUCT BUTTONS  
+  
+$("list").addEventListener("click",async e=>{  
+  
+ const btn=e.target.closest("button[data-action]");  
+ if(!btn) return;  
+  
+ const id=btn.dataset.id;  
+  
+ if(btn.dataset.action==="save-product") await saveProduct(id);  
+ if(btn.dataset.action==="remove-product") await removeProduct(id);  
+});  
+  
+  
+// ADD PRODUCT  
+  
+$("add").addEventListener("click",async()=>{  
+  
+ if(!allowed()) return;  
+  
+ const name=$("name").value.trim();  
+ const category=$("category").value.trim();  
+ const emoji=$("emoji").value.trim()||"🛒";  
+ const pack=$("pack").value.trim();  
+ const packPrice=Number($("price").value);  
+  
+ if(!name || !category || !pack ||  
+    !Number.isFinite(packPrice) || packPrice<=0){  
+  alert("नाम, कैटेगरी, पैक और सही कीमत भरें।");  
+  return;  
+ }  
+  
+ const id="custom_"+Date.now();  
+  
+ const p={  
+  id,name,category,emoji,pack,packPrice,  
+  packSalePrice:0,packKg:0,loose:false,  
+  loosePricePerKg:0,looseSalePricePerKg:0,isActive:true  
+ };  
+  
+ try{  
+  await setDoc(doc(db,"Products",id),p);  
+  
+  ["name","category","pack","price"].forEach(x=>$(x).value="");  
+  $("emoji").value="🛒";  
+  
+  await loadProducts();  
+  $("status").textContent="नया सामान सेव हो गया।";  
+  
+ }catch(e){  
+  alert("सामान सेव नहीं हुआ: "+e.message);  
+ }  
+});  
+  
+  
+// BULK PRICE UPDATE  
+  
+$("bulkUpdate").addEventListener("click",async()=>{  
+  
+ if(!allowed()) return;  
+  
+ const selected=[...document.querySelectorAll(".productSelect:checked")];  
+  
+ if(selected.length===0){  
+  alert("पहले सामान चुनें।");  
+  return;  
+ }  
+  
+ const newPrice=Number($("bulkPrice").value);  
+  
+ if(!Number.isFinite(newPrice)||newPrice<0){  
+  alert("सही नई कीमत भरें।");  
+  return;  
+ }  
+  
+ if(selected.length>500){  
+  alert("एक बार में अधिकतम 500 सामान बदल सकते हैं।");  
+  return;  
+ }  
+  
+ if(!confirm(selected.length+" सामानों की कीमत ₹"+newPrice+" करना चाहते हैं?")) return;  
+  
+ try{  
+  const batch=writeBatch(db);  
+  
+  selected.forEach(cb=>{  
+   const p=rows.find(x=>x.id===cb.dataset.id);  
+   if(p){  
+    batch.set(doc(db,"Products",p.id),  
+     {...p,packPrice:newPrice},{merge:true});  
+   }  
+  });  
+  
+  await batch.commit();  
+  
+  $("bulkPrice").value="";  
+  $("selectAllProducts").checked=false;  
+  
+  await loadProducts();  
+  alert("चुने हुए सामानों की कीमत बदल गई।");  
+  
+ }catch(e){  
+  alert("कीमत अपडेट नहीं हुई: "+e.message);  
+ }  
+});  
+  
+  
+// ORDER MANAGEMENT  
+  
+const orderStatuses=[  
+ "नया","कन्फर्म","तैयार हो रहा है",  
+ "डिलीवरी के लिए निकला","पूरा हुआ","रद्द"  
+];  
+  
+async function loadOrders(){  
+  
+ if(!allowed()) return;  
+  
+ $("ordersList").textContent="ऑर्डर लोड हो रहे हैं...";  
+  
+ try{  
+  const snap=await getDocs(collection(db,"Orders"));  
+  
+  allOrders=snap.docs.map(d=>({  
+   id:d.id,  
+   ...d.data()  
+  }));  
+  
+  allOrders.sort((a,b)=>{  
+   const ta=a.createdAt?.toMillis?.()||0;  
+   const tb=b.createdAt?.toMillis?.()||0;  
+   return tb-ta;  
+  });  
+  
+  renderOrders();  
+  updateDashboard();  
+  
+ }catch(e){  
+  $("ordersList").textContent="ऑर्डर लोड नहीं हुए: "+e.message;  
+ }  
+}  
+  
+  
+function renderOrders(){  
+  
+ $("ordersList").innerHTML=allOrders.map(o=>`  
+  
+ <div class="order-card">  
+  <b>🛒 ग्राहक: ${escapeHTML(o.customerName||"")}</b>  
+  <p class="order-id">Order ID: ${escapeHTML(o.id)}</p>  
+  <p>📱 मोबाइल: ${escapeHTML(o.mobile||"")}</p>  
+  <p>📍 पता: ${escapeHTML(o.address||"")}</p>  
+  <p>💰 कुल: ₹${money(o.total)}</p>  
+  <p class="status-label">वर्तमान स्थिति: ${escapeHTML(o.status||"नया")}</p>  
+  <label>नई स्थिति चुनें:</label>  
+  
+  <select data-order-status="${escapeHTML(o.id)}">  
+   ${orderStatuses.map(s=>`  
+    <option value="${s}" ${s===(o.status||"नया")?"selected":""}>${s}</option>  
+   `).join("")}  
+  </select>  
+  
+  <button data-action="change-order" data-id="${escapeHTML(o.id)}">  
+   Status सेव करें  
+  </button>  
+ </div>  
+  
+ `).join("") || "अभी कोई ऑर्डर नहीं है।";  
+}  
+  
+  
+$("ordersList").addEventListener("click",async e=>{  
+ const btn=e.target.closest('button[data-action="change-order"]');  
+ if(btn) await changeOrderStatus(btn.dataset.id);  
+});  
+  
+  
+async function changeOrderStatus(id){  
+  
+ if(!allowed()){  
+  alert("पहले Admin Login करें।");  
+  return;  
+ }  
+  
+ const select=document.querySelector(  
+  `[data-order-status="${CSS.escape(id)}"]`  
+ );  
+  
+ if(!select) return;  
+  
+ const newStatus=select.value;  
+  
+ if(!orderStatuses.includes(newStatus)){  
+  alert("गलत Status चुना गया है।");  
+  return;  
+ }  
+  
+ try{  
+  const batch=writeBatch(db);  
+  
+  batch.update(doc(db,"Orders",id),{  
+   status:newStatus  
+  });  
+  
+  batch.set(doc(db,"OrderTracking",id),{  
+   status:newStatus,  
+   updatedAt:serverTimestamp()  
+  },{merge:true});  
+  
+  await batch.commit();  
+  
+  alert("ऑर्डर का Status सफलतापूर्वक बदल गया!");  
+  await loadOrders();  
+  
+ }catch(e){  
+  alert("Status अपडेट नहीं हुआ: "+e.code+" — "+e.message);  
+ }  
+}  
+  
+$("refreshOrders").addEventListener("click",loadOrders);  
+  
+  
+// CSV REPORT  
+  
+function csvCell(value){  
+ return '"'+String(value??"").replace(/"/g,'""')+'"';  
+}  
+  
+$("downloadOrders").addEventListener("click",()=>{  
+  
+ if(!allowed()) return;  
+  
+ if(allOrders.length===0){  
+  alert("डाउनलोड करने के लिए कोई ऑर्डर नहीं है।");  
+  return;  
+ }  
+  
+ const headings=[  
+  "Order ID","ग्राहक का नाम","मोबाइल","पता","कुल राशि","स्थिति"  
+ ];  
+  
+ const lines=[headings.map(csvCell).join(",")];  
+  
+ allOrders.forEach(o=>{  
+  lines.push([  
+   o.id,o.customerName||"",o.mobile||"",  
+   o.address||"",o.total||0,o.status||"नया"  
+  ].map(csvCell).join(","));  
+ });  
+  
+ const csv="\uFEFF"+lines.join("\r\n");  
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});  
+ const url=URL.createObjectURL(blob);  
+ const a=document.createElement("a");  
+  
+ a.href=url;  
+ a.download="GRAM_BASKET_Orders.csv";  
+ a.click();  
+  
+ URL.revokeObjectURL(url);  
+});  
+  
+  
+// DELIVERY SETTINGS  
+  
+async function loadDeliverySettings(){  
+  
+ if(!allowed()) return;  
+  
+ try{  
+  const snap=await getDoc(doc(db,"Settings","delivery"));  
+  
+  if(snap.exists()){  
+   const s=snap.data();  
+   $("deliveryFee").value=s.deliveryFee??20;  
+   $("minimumOrder").value=s.minimumOrder??100;  
+   $("freeDeliveryAbove").value=s.freeDeliveryAbove??500;  
+  }  
+  
+ }catch(e){  
+  $("deliveryStatus").textContent="सेटिंग लोड नहीं हुई: "+e.message;  
+ }  
+}  
+  
+  
+$("saveDelivery").addEventListener("click",async()=>{  
+  
+ if(!allowed()) return;  
+  
+ const deliveryFee=Number($("deliveryFee").value);  
+ const minimumOrder=Number($("minimumOrder").value);  
+ const freeDeliveryAbove=Number($("freeDeliveryAbove").value);  
+  
+ if(  
+  !Number.isFinite(deliveryFee)||deliveryFee<0||  
+  !Number.isFinite(minimumOrder)||minimumOrder<0||  
+  !Number.isFinite(freeDeliveryAbove)||freeDeliveryAbove<0  
+ ){  
+  alert("सभी सेटिंग में सही राशि भरें।");  
+  return;  
+ }  
+  
+ try{  
+  await setDoc(doc(db,"Settings","delivery"),{  
+   deliveryFee,  
+   minimumOrder,  
+   freeDeliveryAbove,  
+   updatedAt:serverTimestamp()  
+  });  
+  
+  $("deliveryStatus").textContent="डिलीवरी सेटिंग सफलतापूर्वक सेव हो गई।";  
+  
+ }catch(e){  
+  $("deliveryStatus").textContent="सेव नहीं हुई: "+e.message;  
+ }  
+});  
+  
+  
+// ERROR HANDLING  
+  
+window.addEventListener("error",e=>{  
+ $("status").textContent="JavaScript Error: "+e.message;  
+});  
+  
+window.addEventListener("unhandledrejection",e=>{  
+ $("status").textContent="Firebase Error: "+(e.reason?.message||e.reason);  
+});  
+  
+</script>  </body>  
 </html>
